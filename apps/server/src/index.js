@@ -753,9 +753,12 @@ function getUnlockedContext(store, bookId, limit = 12000) {
 
 function getReadingNotes(store, bookId, sectionId) {
   const resolvedBookId = requireBookId(store, bookId);
+  const state = getReadingState(store, resolvedBookId);
+  const sectionsById = new Map(getSections(store, resolvedBookId).map((section) => [section.id, section]));
   return store.reading_notes
     .filter((note) => note.book_id === resolvedBookId)
     .filter((note) => !sectionId || note.section_id === sectionId)
+    .filter((note) => isNoteWithinWaterline(note, sectionsById, state))
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
@@ -770,6 +773,7 @@ function saveReadingNote(store, bookId, body) {
   const content = requireString(body.content, 'content');
   const section = resolveSection(store, resolvedBookId, body.section_id, body.section_index);
   const paragraphIndex = normalizeOptionalInteger(body.paragraph_index);
+  assertNoteAnchorWithinWaterline(store, resolvedBookId, section, paragraphIndex);
   const now = new Date().toISOString();
   const note = {
     id: crypto.randomUUID(),
@@ -789,6 +793,41 @@ function saveReadingNote(store, bookId, body) {
 
   store.reading_notes.push(note);
   return note;
+}
+
+function isNoteWithinWaterline(note, sectionsById, state) {
+  if (!note.section_id) return true;
+  const section = sectionsById.get(note.section_id);
+  if (!section) return false;
+  if (note.paragraph_index === null || note.paragraph_index === undefined) {
+    return section.section_index <= state.unlocked_section_index;
+  }
+  return comparePosition(
+    section.section_index,
+    note.paragraph_index,
+    state.unlocked_section_index,
+    state.unlocked_paragraph_index
+  ) <= 0;
+}
+
+function assertNoteAnchorWithinWaterline(store, bookId, section, paragraphIndex) {
+  if (!section) return;
+  if (paragraphIndex !== null && paragraphIndex >= section.paragraphs.length) {
+    throw new Error('note_paragraph_out_of_range');
+  }
+  const state = store.reading_states.find((item) => item.book_id === bookId);
+  if (!state) throw new Error('reading_state_not_found');
+
+  if (paragraphIndex === null) {
+    if (section.section_index > state.unlocked_section_index) {
+      throw new Error('note_after_waterline');
+    }
+    return;
+  }
+
+  if (comparePosition(section.section_index, paragraphIndex, state.unlocked_section_index, state.unlocked_paragraph_index) > 0) {
+    throw new Error('note_after_waterline');
+  }
 }
 
 function advanceReadingProgress(store, bookId, sectionIndex, paragraphIndex) {
@@ -822,9 +861,17 @@ function comparePosition(sectionA, paragraphA, sectionB, paragraphB) {
 
 function resolveSection(store, bookId, sectionId, sectionIndex) {
   const sections = getSections(store, bookId);
-  if (sectionId) return sections.find((section) => section.id === sectionId);
-  if (sectionIndex !== undefined) return sections[normalizeInteger(sectionIndex, 'section_index')];
-  return sections[0];
+  if (sectionId) {
+    const section = sections.find((item) => item.id === sectionId);
+    if (!section) throw new Error('section_not_found');
+    return section;
+  }
+  if (sectionIndex !== undefined) {
+    const section = sections[normalizeInteger(sectionIndex, 'section_index')];
+    if (!section) throw new Error('section_not_found');
+    return section;
+  }
+  return sections[0] || null;
 }
 
 function summarizeSection(section) {

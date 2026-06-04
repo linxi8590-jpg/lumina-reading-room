@@ -129,6 +129,76 @@ try {
   );
   checks.push('mcp_note');
 
+  const lockedNote = await api(baseUrl, token, '/mcp', {
+    method: 'POST',
+    body: {
+      tool: 'save_ai_note',
+      arguments: {
+        book_id: bookId,
+        section_index: 1,
+        paragraph_index: 0,
+        note_type: 'reflection',
+        content: 'This future note should be rejected.',
+      },
+    },
+  });
+  assert(
+    lockedNote.status === 500 && lockedNote.body.message === 'note_after_waterline',
+    'save_ai_note should reject notes after the waterline',
+  );
+
+  const invalidAnchorNote = await api(baseUrl, token, '/mcp', {
+    method: 'POST',
+    body: {
+      tool: 'save_ai_note',
+      arguments: {
+        book_id: bookId,
+        section_index: 99,
+        paragraph_index: 0,
+        note_type: 'reflection',
+        content: 'Invalid anchors should not become unanchored notes.',
+      },
+    },
+  });
+  assert(
+    invalidAnchorNote.status === 500 && invalidAnchorNote.body.message === 'section_not_found',
+    'save_ai_note should reject invalid section anchors',
+  );
+
+  const storePath = path.join(tempDir, 'data.json');
+  const storeSnapshot = JSON.parse(await fs.readFile(storePath, 'utf8'));
+  const lockedSection = storeSnapshot.sections.find(
+    (section) => section.book_id === bookId && section.section_index === 1,
+  );
+  assert(lockedSection, 'smoke book missing locked section');
+  storeSnapshot.reading_notes.push({
+    id: 'legacy-future-note',
+    book_id: bookId,
+    section_id: lockedSection.id,
+    paragraph_index: 0,
+    paragraph_key: lockedSection.paragraph_keys[0],
+    author_type: 'user',
+    note_type: 'reflection',
+    content: 'Legacy future note should stay hidden.',
+    model_name: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+  await fs.writeFile(storePath, `${JSON.stringify(storeSnapshot, null, 2)}\n`);
+
+  const filteredNotes = await api(baseUrl, token, '/mcp', {
+    method: 'POST',
+    body: {
+      tool: 'get_reading_notes',
+      arguments: { book_id: bookId },
+    },
+  });
+  assert(
+    !filteredNotes.body.result.some((item) => item.id === 'legacy-future-note'),
+    'get_reading_notes leaked a note after the waterline',
+  );
+  checks.push('note_waterline');
+
   const reimport = await api(baseUrl, token, '/api/books/import', {
     method: 'POST',
     body: {

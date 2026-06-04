@@ -92,7 +92,7 @@ https://your-domain.example/health
 
 ### get_reading_notes
 
-返回用户和 AI 已经写下的笔记。
+返回水位线以内、用户和 AI 已经写下的笔记。未读段落上的笔记不会返回。
 
 ### save_ai_note
 
