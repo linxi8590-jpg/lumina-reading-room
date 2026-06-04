@@ -58,7 +58,17 @@ export default function Reader() {
   const [notesLoading, setNotesLoading] = useState(false)
   const [notesError, setNotesError] = useState<string | null>(null)
   const [composerParagraphIdx, setComposerParagraphIdx] = useState<number | null>(null)
+  const [mobileDrawer, setMobileDrawer] = useState<'chapters' | 'notes' | null>(null)
   const configured = isConfigured()
+
+  useEffect(() => {
+    if (!mobileDrawer) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMobileDrawer(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileDrawer])
   const sectionsForNotes = payload?.sections ?? []
   const sectionsById = useMemo(() => {
     const map = new Map<string, { title: string; section_index: number }>()
@@ -252,6 +262,36 @@ export default function Reader() {
 
         {/* 中：阅读区 */}
         <article className="px-6 py-6">
+          {/* mobile 顶部工具栏：抽屉入口 */}
+          <div className="md:hidden -mx-6 px-6 pb-3 mb-4 flex items-center gap-2 border-b border-ink-500/15">
+            <Link
+              to="/shelf"
+              className="text-xs text-sky-700 underline mr-auto"
+              aria-label="回书架"
+            >
+              ← 书架
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileDrawer('chapters')}
+              aria-label="打开章节导航"
+              className="text-xs px-2 py-1 border border-ink-500/30 rounded hover:bg-paper-100 transition-colors"
+            >
+              章节
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileDrawer('notes')}
+              aria-label={`打开笔记栏${notes.length > 0 ? `，共 ${notes.length} 条` : ''}`}
+              className="text-xs px-2 py-1 border border-ink-500/30 rounded hover:bg-paper-100 transition-colors"
+            >
+              笔记
+              {notes.length > 0 && (
+                <span className="ml-1 text-ink-500">({notes.length})</span>
+              )}
+            </button>
+          </div>
+
           <ReadingWaterline
             currentSectionIndex={state.current_section_index}
             currentParagraphIndex={state.current_paragraph_index}
@@ -380,6 +420,92 @@ export default function Reader() {
           />
         </aside>
       </div>
+
+      {/* mobile 抽屉 */}
+      {mobileDrawer && (
+        <div
+          className="md:hidden fixed inset-0 z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-label={mobileDrawer === 'chapters' ? '章节导航' : '读书笔记栏'}
+        >
+          <button
+            type="button"
+            onClick={() => setMobileDrawer(null)}
+            aria-label="关闭"
+            className="absolute inset-0 bg-ink-900/40 cursor-default"
+            tabIndex={-1}
+          />
+          <div
+            className={`absolute top-0 bottom-0 w-[85%] max-w-sm bg-paper-50 overflow-y-auto p-4 shadow-xl ${
+              mobileDrawer === 'chapters'
+                ? 'left-0 border-r border-ink-500/15'
+                : 'right-0 border-l border-ink-500/15'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => setMobileDrawer(null)}
+              aria-label="关闭抽屉"
+              className="absolute top-2 right-2 text-ink-500 hover:text-ink-700 text-xl leading-none p-2"
+            >
+              ×
+            </button>
+            {mobileDrawer === 'chapters' ? (
+              <div className="mt-8">
+                <h2 className="text-sm font-medium text-ink-700 mb-3">
+                  {book.title}
+                </h2>
+                {book.author && (
+                  <p className="text-xs text-ink-500 mb-4">{book.author}</p>
+                )}
+                <nav aria-label="章节列表">
+                  <ul className="space-y-1">
+                    {sections.map((section) => {
+                      const unlocked = isUnlocked(section.section_index)
+                      const isCurrent =
+                        section.section_index === state.current_section_index
+                      return (
+                        <li key={section.id}>
+                          <button
+                            type="button"
+                            disabled={!unlocked || advancing}
+                            onClick={() => {
+                              advance(section.section_index, 0)
+                              setMobileDrawer(null)
+                            }}
+                            aria-label={`跳转到${section.title}${unlocked ? '' : '，未解锁'}`}
+                            aria-current={isCurrent ? 'true' : undefined}
+                            className={`block w-full text-left text-sm px-2 py-2 rounded transition-colors ${
+                              isCurrent
+                                ? 'bg-lamp-200 text-ink-900'
+                                : unlocked
+                                  ? 'text-ink-700 hover:bg-paper-100'
+                                  : 'text-ink-500/60 cursor-not-allowed'
+                            }`}
+                          >
+                            {section.title}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </nav>
+              </div>
+            ) : (
+              <div className="mt-8">
+                <NotesPanel
+                  notes={notes}
+                  loading={notesLoading}
+                  error={notesError}
+                  sectionsById={sectionsById}
+                  bookTitle={book.title}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   )
 }
