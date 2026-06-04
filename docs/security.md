@@ -20,6 +20,7 @@ The important risks are:
 - There should be no tool that fetches future content.
 - Write tools should be narrow: save notes, advance progress.
 - Logs must not print tokens or full book content.
+- Local books and notes live in `.lumina/data.json`; `.lumina/` must stay out of Git.
 
 ## Token handling
 

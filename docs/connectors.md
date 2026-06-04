@@ -54,6 +54,28 @@ https://your-domain.example/health
 
 ## 工具列表
 
+本地开发阶段，`/mcp` 接收一个简单 JSON 请求：
+
+```json
+{
+  "tool": "get_current_passage",
+  "arguments": {}
+}
+```
+
+返回格式：
+
+```json
+{
+  "tool": "get_current_passage",
+  "result": {
+    "section_title": "Start",
+    "paragraph_index": 0,
+    "text": "..."
+  }
+}
+```
+
 ### get_current_reading_state
 
 返回当前书、当前章节、当前段落、阅读水位线。

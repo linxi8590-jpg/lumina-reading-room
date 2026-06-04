@@ -24,7 +24,13 @@ Unread content may exist in storage, but it is invisible to AI tools.
 
 ## Data model
 
-The canonical schema lives in:
+The first local version uses a JSON file:
+
+```text
+.lumina/data.json
+```
+
+The Supabase deployment uses the same concepts in SQL. The canonical SQL schema lives in:
 
 ```text
 deploy/supabase/schema.sql
@@ -80,4 +86,3 @@ Authorization: Bearer <connector-token>
 ```
 
 The token is scoped to the user's own library.
-
