@@ -76,6 +76,13 @@ export default function Shelf() {
           >
             连接配置
           </Link>
+          <Link
+            to="/settings"
+            className="text-sky-700 underline"
+            aria-label="设置"
+          >
+            设置
+          </Link>
         </nav>
       </header>
 
