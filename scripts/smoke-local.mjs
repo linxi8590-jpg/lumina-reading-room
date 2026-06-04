@@ -51,24 +51,31 @@ try {
   assert(unauthorized.status === 401, 'unauthorized API access should be rejected');
   checks.push('auth');
 
+  const initialBookText = [
+    '# Opening',
+    'First paragraph visible at start.',
+    '',
+    'Second paragraph visible after progress.',
+    '',
+    '# Locked',
+    'Future paragraph must not be returned before unlock.',
+  ].join('\n');
+  const bookImportBody = {
+    title: 'Smoke Test Book',
+    author: 'Lumina',
+    source_filename: 'smoke-test.md',
+    text: initialBookText,
+  };
+
   const book = await api(baseUrl, token, '/api/books/import', {
     method: 'POST',
-    body: {
-      title: 'Smoke Test Book',
-      author: 'Lumina',
-      text: [
-        '# Opening',
-        'First paragraph visible at start.',
-        '',
-        'Second paragraph visible after progress.',
-        '',
-        '# Locked',
-        'Future paragraph must not be returned before unlock.',
-      ].join('\n'),
-    },
+    body: bookImportBody,
   });
   assert(book.status === 201, 'book import failed');
   const bookId = book.body.book.id;
+  const payload = await api(baseUrl, token, `/api/books/${bookId}`);
+  const firstSectionId = payload.body.sections[0].id;
+  const secondParagraphKey = payload.body.sections[0].paragraph_keys[1];
   checks.push('import');
 
   let context = await api(baseUrl, token, `/api/books/${bookId}/unlocked-context`);
@@ -118,6 +125,47 @@ try {
     'saved AI note was not returned by notes API',
   );
   checks.push('mcp_note');
+
+  const reimport = await api(baseUrl, token, '/api/books/import', {
+    method: 'POST',
+    body: {
+      ...bookImportBody,
+      text: initialBookText.replace(
+        'Second paragraph visible after progress.',
+        'Second paragraph visible after progress, with a tiny edit.',
+      ),
+    },
+  });
+  assert(reimport.status === 201, 'book reimport failed');
+  assert(reimport.body.book.id === bookId, 'reimport should keep the same book id');
+  assert(reimport.body.imported === 'updated', 'reimport should update the existing book');
+
+  const reimportedPayload = await api(baseUrl, token, `/api/books/${bookId}`);
+  assert(
+    reimportedPayload.body.sections[0].id === firstSectionId,
+    'reimport should keep stable section ids',
+  );
+  assert(
+    reimportedPayload.body.sections[0].paragraph_keys[1] === secondParagraphKey,
+    'reimport should keep stable paragraph keys',
+  );
+  assert(
+    reimportedPayload.body.state.unlocked_paragraph_index === 1,
+    'reimport should preserve reading waterline',
+  );
+
+  const notesAfterReimport = await api(baseUrl, token, `/api/books/${bookId}/notes`);
+  assert(
+    notesAfterReimport.body.notes.some(
+      (item) =>
+        item.author_type === 'ai' &&
+        item.note_type === 'highlight' &&
+        item.section_id === firstSectionId &&
+        item.paragraph_key === secondParagraphKey,
+    ),
+    'reimport should preserve AI note anchors',
+  );
+  checks.push('reimport');
 
   console.log(`Lumina local smoke passed: ${checks.join(', ')}`);
 } catch (error) {

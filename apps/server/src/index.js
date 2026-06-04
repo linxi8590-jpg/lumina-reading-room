@@ -288,44 +288,150 @@ async function handleMcp(req, res) {
 function importBook(store, body) {
   const title = requireString(body.title, 'title');
   const text = requireString(body.text, 'text');
+  const author = body.author || null;
+  const sourceFilename = body.source_filename || null;
+  const sourceKey = makeBookSourceKey(body, title, author, sourceFilename);
+  const contentHash = sha256Hex(normalizeStableText(text));
   const now = new Date().toISOString();
-  const book = {
-    id: crypto.randomUUID(),
-    title,
-    author: body.author || null,
-    source_filename: body.source_filename || null,
-    created_at: now,
-    updated_at: now
-  };
+  const splitSections = splitIntoSections(text);
 
-  const sections = splitIntoSections(text).map((section, index) => ({
-    id: crypto.randomUUID(),
-    book_id: book.id,
-    section_index: index,
-    title: section.title,
-    text: section.paragraphs.join('\n\n'),
-    paragraphs: section.paragraphs,
-    created_at: now,
-    updated_at: now
-  }));
-
-  if (sections.length === 0) {
+  if (splitSections.length === 0) {
     throw new Error('book_has_no_readable_text');
   }
 
-  store.books.push(book);
-  store.sections.push(...sections);
-  store.reading_states.push({
-    id: crypto.randomUUID(),
-    book_id: book.id,
-    current_section_index: 0,
-    current_paragraph_index: 0,
-    unlocked_section_index: 0,
-    unlocked_paragraph_index: 0,
+  let book = findImportTargetBook(store, body.id, sourceKey, title, author, sourceFilename);
+  const imported = book ? 'updated' : 'created';
+  if (!book) {
+    book = {
+      id: stableUuid('book', sourceKey),
+      created_at: now
+    };
+    store.books.push(book);
+  }
+
+  Object.assign(book, {
+    title,
+    author,
+    source_filename: sourceFilename,
+    source_key: sourceKey,
+    content_hash: contentHash,
     updated_at: now
   });
 
-  return { book, sections_count: sections.length };
+  const oldSections = getSections(store, book.id);
+  const oldSectionsById = new Map(oldSections.map((section) => [section.id, section]));
+  const sections = buildStableSections(book.id, splitSections, oldSectionsById, now);
+  remapNotesForReimport(store, book.id, oldSections, sections);
+  store.sections = store.sections.filter((section) => section.book_id !== book.id);
+  store.sections.push(...sections);
+
+  let state = store.reading_states.find((item) => item.book_id === book.id);
+  if (!state) {
+    state = {
+      id: crypto.randomUUID(),
+      book_id: book.id,
+      current_section_index: 0,
+      current_paragraph_index: 0,
+      unlocked_section_index: 0,
+      unlocked_paragraph_index: 0,
+      updated_at: now
+    };
+    store.reading_states.push(state);
+  } else {
+    clampReadingStateToSections(state, sections);
+    state.updated_at = now;
+  }
+
+  return { book, sections_count: sections.length, imported };
+}
+
+function findImportTargetBook(store, explicitId, sourceKey, title, author, sourceFilename) {
+  if (explicitId) {
+    const explicit = findBook(store, explicitId);
+    if (explicit) return explicit;
+  }
+  const bySourceKey = store.books.find((book) => book.source_key === sourceKey);
+  if (bySourceKey) return bySourceKey;
+  if (sourceFilename) {
+    const byFilename = store.books.find((book) =>
+      book.source_filename === sourceFilename &&
+      normalizeStableText(book.title) === normalizeStableText(title) &&
+      normalizeStableText(book.author || '') === normalizeStableText(author || '')
+    );
+    if (byFilename) return byFilename;
+  }
+  return null;
+}
+
+function buildStableSections(bookId, splitSections, oldSectionsById, now) {
+  const titleOccurrences = new Map();
+  return splitSections.map((section, index) => {
+    const titleKey = normalizeStableText(section.title || `Section ${index + 1}`);
+    const occurrence = titleOccurrences.get(titleKey) || 0;
+    titleOccurrences.set(titleKey, occurrence + 1);
+    const stableKey = `${titleKey}#${occurrence}`;
+    const id = stableUuid('section', `${bookId}\0${stableKey}`);
+    const previous = oldSectionsById.get(id);
+
+    return {
+      id,
+      stable_key: stableKey,
+      book_id: bookId,
+      section_index: index,
+      title: section.title,
+      text: section.paragraphs.join('\n\n'),
+      paragraphs: section.paragraphs,
+      paragraph_keys: section.paragraphs.map((_, paragraphIndex) =>
+        stableUuid('paragraph', `${id}\0${paragraphIndex}`)
+      ),
+      created_at: previous?.created_at || now,
+      updated_at: now
+    };
+  });
+}
+
+function remapNotesForReimport(store, bookId, oldSections, newSections) {
+  if (oldSections.length === 0) return;
+  const oldById = new Map(oldSections.map((section) => [section.id, section]));
+  for (const note of store.reading_notes) {
+    if (note.book_id !== bookId || !note.section_id) continue;
+    if (newSections.some((section) => section.id === note.section_id)) continue;
+    const oldSection = oldById.get(note.section_id);
+    if (!oldSection) continue;
+    const replacement = newSections.find((section) =>
+      section.section_index === oldSection.section_index &&
+      normalizeStableText(section.title) === normalizeStableText(oldSection.title)
+    );
+    if (replacement) {
+      note.section_id = replacement.id;
+      if (note.paragraph_index !== null && note.paragraph_index !== undefined) {
+        note.paragraph_key = replacement.paragraph_keys?.[note.paragraph_index] || null;
+      }
+      note.updated_at = new Date().toISOString();
+    }
+  }
+}
+
+function clampReadingStateToSections(state, sections) {
+  const maxSectionIndex = Math.max(0, sections.length - 1);
+  state.current_section_index = Math.min(state.current_section_index, maxSectionIndex);
+  state.unlocked_section_index = Math.min(state.unlocked_section_index, maxSectionIndex);
+
+  const currentSection = sections[state.current_section_index];
+  const unlockedSection = sections[state.unlocked_section_index];
+  state.current_paragraph_index = clampParagraphIndex(
+    state.current_paragraph_index,
+    currentSection
+  );
+  state.unlocked_paragraph_index = clampParagraphIndex(
+    state.unlocked_paragraph_index,
+    unlockedSection
+  );
+}
+
+function clampParagraphIndex(value, section) {
+  const maxParagraphIndex = Math.max(0, (section?.paragraphs.length || 1) - 1);
+  return Math.min(value, maxParagraphIndex);
 }
 
 function splitIntoSections(text) {
@@ -413,6 +519,7 @@ function getCurrentPassage(store, bookId) {
     section_index: section.section_index,
     section_title: section.title,
     paragraph_index: state.current_paragraph_index,
+    paragraph_key: section.paragraph_keys?.[state.current_paragraph_index] || null,
     text: section.paragraphs[state.current_paragraph_index] || ''
   };
 }
@@ -461,12 +568,16 @@ function saveReadingNote(store, bookId, body) {
 
   const content = requireString(body.content, 'content');
   const section = resolveSection(store, resolvedBookId, body.section_id, body.section_index);
+  const paragraphIndex = normalizeOptionalInteger(body.paragraph_index);
   const now = new Date().toISOString();
   const note = {
     id: crypto.randomUUID(),
     book_id: resolvedBookId,
     section_id: section?.id || null,
-    paragraph_index: normalizeOptionalInteger(body.paragraph_index),
+    paragraph_index: paragraphIndex,
+    paragraph_key: section && paragraphIndex !== null
+      ? section.paragraph_keys?.[paragraphIndex] || null
+      : null,
     author_type: authorType,
     note_type: noteType,
     content,
@@ -520,7 +631,8 @@ function summarizeSection(section) {
     id: section.id,
     section_index: section.section_index,
     title: section.title,
-    paragraph_count: section.paragraphs.length
+    paragraph_count: section.paragraphs.length,
+    paragraph_keys: section.paragraph_keys || []
   };
 }
 
@@ -540,6 +652,50 @@ function requireString(value, name) {
     throw new Error(`${name}_is_required`);
   }
   return value.trim();
+}
+
+function makeBookSourceKey(body, title, author, sourceFilename) {
+  if (typeof body.source_id === 'string' && body.source_id.trim()) {
+    return `source_id:${body.source_id.trim()}`;
+  }
+  if (sourceFilename) {
+    return [
+      'file',
+      normalizeStableText(sourceFilename),
+      normalizeStableText(title),
+      normalizeStableText(author || '')
+    ].join(':');
+  }
+  return [
+    'title',
+    normalizeStableText(title),
+    normalizeStableText(author || '')
+  ].join(':');
+}
+
+function normalizeStableText(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function sha256Hex(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+function stableUuid(namespace, value) {
+  const chars = sha256Hex(`${namespace}\0${value}`).slice(0, 32).split('');
+  chars[12] = '5';
+  chars[16] = ((Number.parseInt(chars[16], 16) & 0x3) | 0x8).toString(16);
+  return [
+    chars.slice(0, 8).join(''),
+    chars.slice(8, 12).join(''),
+    chars.slice(12, 16).join(''),
+    chars.slice(16, 20).join(''),
+    chars.slice(20, 32).join('')
+  ].join('-');
 }
 
 function normalizeInteger(value, name) {

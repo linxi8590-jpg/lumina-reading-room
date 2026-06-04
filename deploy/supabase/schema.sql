@@ -9,6 +9,8 @@ create table if not exists public.books (
   title text not null,
   author text,
   source_filename text,
+  source_key text unique,
+  content_hash text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -16,11 +18,15 @@ create table if not exists public.books (
 create table if not exists public.sections (
   id uuid primary key default gen_random_uuid(),
   book_id uuid not null references public.books(id) on delete cascade,
+  stable_key text,
   order_index integer not null,
   title text,
   text text not null,
+  paragraph_keys jsonb not null default '[]'::jsonb,
   kind text not null default 'section',
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(book_id, stable_key),
   unique(book_id, order_index)
 );
 
@@ -41,11 +47,13 @@ create table if not exists public.reading_notes (
   book_id uuid not null references public.books(id) on delete cascade,
   section_id uuid references public.sections(id) on delete cascade,
   paragraph_index integer,
+  paragraph_key text,
   author_type text not null check (author_type in ('user', 'ai')),
   note_type text not null check (note_type in ('reflection', 'highlight', 'quote', 'question', 'review_card')),
   content text not null,
   model_name text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.connector_tokens (
@@ -73,4 +81,3 @@ alter table public.connector_tokens enable row level security;
 -- RLS policies depend on the final auth route.
 -- For self-hosted single-user deployments, the server should use the service role key.
 -- Do not expose the service role key to the browser.
-

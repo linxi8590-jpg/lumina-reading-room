@@ -44,6 +44,28 @@ Main tables:
 - `reading_notes`
 - `connector_tokens`
 
+## Import identity
+
+Book import is an upsert, not an append-only upload, when Lumina can identify
+the same source again.
+
+The local server builds a `source_key` from `source_id` when provided, otherwise
+from `source_filename`, title, and author. If there is no filename, title and
+author are used as the fallback source key.
+
+Re-importing the same source keeps:
+
+- the book id
+- section ids
+- paragraph keys
+- reading state
+- existing note anchors
+
+Section ids are derived from the book id plus normalized section title and title
+occurrence count. Paragraph keys are derived from the section id plus paragraph
+index. This keeps anchors stable for typo fixes and small text edits. Major
+reordering still needs a future diff-based import pass.
+
 ## Note types
 
 Notes can be written by a human or by AI.
