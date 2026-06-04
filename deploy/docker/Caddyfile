@@ -1,0 +1,4 @@
+lumina.example.com {
+  reverse_proxy server:3001
+}
+

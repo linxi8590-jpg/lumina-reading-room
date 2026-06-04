@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lumina
+      POSTGRES_USER: lumina
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lumina_dev_password_change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  server:
+    image: node:22-alpine
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm install && pnpm --filter @lumina/server dev"
+    environment:
+      NODE_ENV: development
+      PORT: 8787
+      DATABASE_URL: postgres://lumina:${POSTGRES_PASSWORD:-lumina_dev_password_change_me}@postgres:5432/lumina
+      LUMINA_CONNECTOR_TOKEN: ${LUMINA_CONNECTOR_TOKEN}
+    volumes:
+      - ../..:/app
+    depends_on:
+      - postgres
+    ports:
+      - "8787:8787"
+
+volumes:
+  postgres_data:
+

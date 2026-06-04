@@ -1,0 +1,15 @@
+{
+  "name": "lumina-reading-room",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "token": "node scripts/generate-token.mjs",
+    "check:env": "node scripts/check-env.mjs"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
+
