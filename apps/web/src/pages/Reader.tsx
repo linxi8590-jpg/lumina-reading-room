@@ -59,6 +59,14 @@ export default function Reader() {
   const [notesError, setNotesError] = useState<string | null>(null)
   const [composerParagraphIdx, setComposerParagraphIdx] = useState<number | null>(null)
   const configured = isConfigured()
+  const sectionsForNotes = payload?.sections ?? []
+  const sectionsById = useMemo(() => {
+    const map = new Map<string, { title: string; section_index: number }>()
+    for (const s of sectionsForNotes) {
+      map.set(s.id, { title: s.title, section_index: s.section_index })
+    }
+    return map
+  }, [sectionsForNotes])
 
   useEffect(() => {
     if (!configured || !bookId) return
@@ -149,13 +157,6 @@ export default function Reader() {
 
   const { book, sections, state } = payload
   const currentSection = sections[state.current_section_index]
-  const sectionsById = useMemo(() => {
-    const map = new Map<string, { title: string; section_index: number }>()
-    for (const s of sections) {
-      map.set(s.id, { title: s.title, section_index: s.section_index })
-    }
-    return map
-  }, [sections])
   const totalParagraphsInBook = sections.reduce(
     (sum, s) => sum + s.paragraphs.length,
     0,
