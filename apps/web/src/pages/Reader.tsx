@@ -5,6 +5,8 @@ import { api, isConfigured } from '../lib/api'
 import ReadingWaterline from '../components/ReadingWaterline'
 import NotesPanel from '../components/NotesPanel'
 import NoteComposer from '../components/NoteComposer'
+import ReaderControls from '../components/ReaderControls'
+import { useReaderPrefs } from '../lib/useReaderPrefs'
 import type { ReadingNote } from '../components/NoteBubble'
 
 interface Book {
@@ -59,6 +61,7 @@ export default function Reader() {
   const [notesError, setNotesError] = useState<string | null>(null)
   const [composerParagraphIdx, setComposerParagraphIdx] = useState<number | null>(null)
   const [mobileDrawer, setMobileDrawer] = useState<'chapters' | 'notes' | null>(null)
+  const { fontSize } = useReaderPrefs()
   const configured = isConfigured()
 
   useEffect(() => {
@@ -210,7 +213,10 @@ export default function Reader() {
   const hasNextSection = state.current_section_index + 1 < sections.length
 
   return (
-    <main className="min-h-screen bg-paper-50 text-ink-900">
+    <main
+      data-reader-font={fontSize}
+      className="min-h-screen bg-paper-50 text-ink-900"
+    >
       <div className="grid grid-cols-1 md:grid-cols-[200px_1fr_320px] min-h-screen">
         {/* 左：章节导航 */}
         <aside
@@ -290,6 +296,12 @@ export default function Reader() {
                 <span className="ml-1 text-ink-500">({notes.length})</span>
               )}
             </button>
+            <ReaderControls />
+          </div>
+
+          {/* desktop: 阅读设置浮在阅读区右上角 */}
+          <div className="hidden md:flex justify-end mb-2">
+            <ReaderControls />
           </div>
 
           <ReadingWaterline

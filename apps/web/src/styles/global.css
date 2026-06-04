@@ -43,6 +43,17 @@ body {
 
 .reading {
   font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
+  font-size: 1.125rem;
   line-height: 1.8;
   max-width: 70ch;
+}
+
+[data-reader-font='small'] .reading {
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+[data-reader-font='large'] .reading {
+  font-size: 1.25rem;
+  line-height: 1.9;
 }
