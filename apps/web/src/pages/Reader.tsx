@@ -376,6 +376,7 @@ export default function Reader() {
             loading={notesLoading}
             error={notesError}
             sectionsById={sectionsById}
+            bookTitle={book.title}
           />
         </aside>
       </div>

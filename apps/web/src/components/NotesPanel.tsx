@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react'
 import NoteBubble from './NoteBubble'
 import type { NoteType, ReadingNote } from './NoteBubble'
+import {
+  downloadMarkdown,
+  notesToMarkdown,
+  safeFilename,
+} from '../lib/notesExport'
 
 type Filter = 'all' | 'mine' | 'ai' | NoteType
 
@@ -20,6 +25,7 @@ interface NotesPanelProps {
   loading?: boolean
   error?: string | null
   sectionsById?: Map<string, { title: string; section_index: number }>
+  bookTitle?: string
 }
 
 export default function NotesPanel({
@@ -27,6 +33,7 @@ export default function NotesPanel({
   loading,
   error,
   sectionsById,
+  bookTitle,
 }: NotesPanelProps) {
   const [filter, setFilter] = useState<Filter>('all')
 
@@ -55,9 +62,33 @@ export default function NotesPanel({
     })
   }, [filtered, sectionsById])
 
+  function handleExport() {
+    const title = bookTitle?.trim() || '未命名书'
+    const markdown = notesToMarkdown({
+      bookTitle: title,
+      notes,
+      sectionsById,
+    })
+    const stem = safeFilename(title)
+    const date = new Date().toISOString().slice(0, 10)
+    downloadMarkdown(`${stem}-notes-${date}.md`, markdown)
+  }
+
   return (
     <section aria-label="读书笔记栏" className="text-sm">
-      <h2 className="text-sm font-medium text-ink-700 mb-3">笔记</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-medium text-ink-700">笔记</h2>
+        {notes.length > 0 && (
+          <button
+            type="button"
+            onClick={handleExport}
+            aria-label="导出全部笔记为 Markdown 文件"
+            className="text-xs text-sky-700 hover:text-sky-500 underline"
+          >
+            导出 .md
+          </button>
+        )}
+      </div>
 
       <nav aria-label="笔记过滤" className="flex flex-wrap gap-1 mb-4">
         {FILTERS.map((f) => {
