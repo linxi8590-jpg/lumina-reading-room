@@ -59,15 +59,24 @@ export default function Shelf() {
 
   return (
     <main className="min-h-screen bg-paper-50 text-ink-900 px-6 py-12">
-      <header className="max-w-5xl mx-auto mb-8 flex items-center justify-between">
+      <header className="max-w-5xl mx-auto mb-8 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-serif">书架</h1>
-        <Link
-          to="/connector"
-          className="text-sm text-sky-700 underline"
-          aria-label="连接配置"
-        >
-          连接配置
-        </Link>
+        <nav className="flex items-center gap-4 text-sm">
+          <Link
+            to="/upload"
+            className="px-3 py-1 bg-lamp-500 text-ink-900 rounded font-medium hover:bg-lamp-200 transition-colors"
+            aria-label="上传新书"
+          >
+            + 上传新书
+          </Link>
+          <Link
+            to="/connector"
+            className="text-sky-700 underline"
+            aria-label="连接配置"
+          >
+            连接配置
+          </Link>
+        </nav>
       </header>
 
       {error ? (
@@ -93,8 +102,14 @@ export default function Shelf() {
           aria-label="书架，空"
           className="max-w-5xl mx-auto border border-dashed border-ink-500/30 rounded-lg p-12 text-center text-ink-500"
         >
-          <p>你的书房现在很安静。上传一本书，开始共读。</p>
-          <p className="text-xs mt-3">[上传按钮 · 待实现]</p>
+          <p className="mb-4">你的书房现在很安静。上传一本书，开始共读。</p>
+          <Link
+            to="/upload"
+            className="inline-block px-4 py-2 bg-lamp-500 text-ink-900 rounded font-medium hover:bg-lamp-200 transition-colors"
+            aria-label="上传一本书"
+          >
+            上传一本书
+          </Link>
         </section>
       ) : (
         <section
