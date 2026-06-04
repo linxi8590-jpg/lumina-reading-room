@@ -49,9 +49,8 @@ Note types:
 - `question`: thinking prompt
 - `review_card`: study card
 
-## Public Project vs Private Guixu Room
+## Public Project vs Personal Integrations
 
 Public Lumina is a generic, self-hosted reading room.
 
-Private Guixu room can later attach a book to an existing Guixu chat window with long-term relationship context. That is a separate private feature and should not complicate the public open source project.
-
+Personal forks may attach books to a user's existing private AI workspace, long-term memory system, or chat app. Those integrations are intentionally outside the public open source scope and should not complicate the generic product.
