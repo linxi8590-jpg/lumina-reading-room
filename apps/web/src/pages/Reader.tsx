@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api, isConfigured } from '../lib/api'
 import ReadingWaterline from '../components/ReadingWaterline'
 import NotesPanel from '../components/NotesPanel'
+import NoteComposer from '../components/NoteComposer'
 import type { ReadingNote } from '../components/NoteBubble'
 
 interface Book {
@@ -56,6 +57,7 @@ export default function Reader() {
   const [notes, setNotes] = useState<ReadingNote[]>([])
   const [notesLoading, setNotesLoading] = useState(false)
   const [notesError, setNotesError] = useState<string | null>(null)
+  const [composerParagraphIdx, setComposerParagraphIdx] = useState<number | null>(null)
   const configured = isConfigured()
 
   useEffect(() => {
@@ -272,20 +274,44 @@ export default function Reader() {
                     state.current_section_index,
                     state.current_paragraph_index,
                   ) < 0
+                const isComposerHere = composerParagraphIdx === idx
                 return (
-                  <p
-                    key={`${currentSection.id}-${idx}`}
-                    aria-current={isCurrent ? 'true' : undefined}
-                    className={`mb-6 transition-colors ${
-                      isCurrent
-                        ? 'border-l-2 border-lamp-500 pl-4 text-ink-900'
-                        : isBeforeCurrent
-                          ? 'text-ink-700'
-                          : 'text-ink-500'
-                    }`}
-                  >
-                    {paragraph}
-                  </p>
+                  <div key={`${currentSection.id}-${idx}`}>
+                    <p
+                      aria-current={isCurrent ? 'true' : undefined}
+                      className={`mb-2 transition-colors ${
+                        isCurrent
+                          ? 'border-l-2 border-lamp-500 pl-4 text-ink-900'
+                          : isBeforeCurrent
+                            ? 'text-ink-700'
+                            : 'text-ink-500'
+                      }`}
+                    >
+                      {paragraph}
+                    </p>
+                    {!isComposerHere && (
+                      <button
+                        type="button"
+                        onClick={() => setComposerParagraphIdx(idx)}
+                        aria-label={`为第 ${idx + 1} 段写一条笔记`}
+                        className="text-[10px] text-ink-500 hover:text-sky-700 transition-colors mb-4 opacity-60 hover:opacity-100"
+                      >
+                        + 写一条
+                      </button>
+                    )}
+                    {isComposerHere && bookId && (
+                      <NoteComposer
+                        bookId={bookId}
+                        sectionId={currentSection.id}
+                        paragraphIndex={idx}
+                        onSaved={(note) => {
+                          setNotes((prev) => [...prev, note])
+                          setComposerParagraphIdx(null)
+                        }}
+                        onCancel={() => setComposerParagraphIdx(null)}
+                      />
+                    )}
+                  </div>
                 )
               })}
             </div>
