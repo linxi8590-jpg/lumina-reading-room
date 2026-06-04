@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import JSZip from 'jszip';
+import { XMLParser } from 'fast-xml-parser';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,9 +16,17 @@ const port = Number(process.env.PORT || 8787);
 const dataDir = path.resolve(rootDir, process.env.LUMINA_DATA_DIR || '.lumina');
 const dataFile = path.join(dataDir, 'data.json');
 const connectorToken = process.env.LUMINA_CONNECTOR_TOKEN || '';
+const maxJsonBodyBytes = Number(process.env.LUMINA_MAX_JSON_BODY_BYTES || 50 * 1024 * 1024);
 
 const noteTypes = new Set(['reflection', 'highlight', 'quote', 'question', 'review_card']);
 const authorTypes = new Set(['user', 'ai']);
+const xmlParser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: '@_',
+  textNodeName: '#text',
+  trimValues: true,
+  parseTagValue: false
+});
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -118,7 +128,7 @@ async function readJsonBody(req) {
   let raw = '';
   for await (const chunk of req) {
     raw += chunk;
-    if (raw.length > 10 * 1024 * 1024) {
+    if (raw.length > maxJsonBodyBytes) {
       throw new Error('request_body_too_large');
     }
   }
@@ -158,7 +168,8 @@ async function handleApi(req, res, url) {
   if (req.method === 'POST' && url.pathname === '/api/books/import') {
     const body = await readJsonBody(req);
     const store = await readStore();
-    const result = importBook(store, body);
+    const importBody = await normalizeImportBody(body);
+    const result = importBook(store, importBody);
     await writeStore(store);
     sendJson(res, 201, result);
     return;
@@ -283,6 +294,196 @@ async function handleMcp(req, res) {
 
   if (didWrite) await writeStore(store);
   sendJson(res, 200, { tool, result });
+}
+
+async function normalizeImportBody(body) {
+  const format = String(body.format || '').toLowerCase();
+  const sourceFilename = body.source_filename || body.filename || null;
+  const looksLikeEpub = format === 'epub' ||
+    /\.epub$/i.test(sourceFilename || '') ||
+    body.media_type === 'application/epub+zip';
+
+  if (!looksLikeEpub) return body;
+
+  const parsed = await parseEpubBody(body);
+  return {
+    ...body,
+    title: body.title || parsed.title || titleFromFilename(sourceFilename) || 'Untitled EPUB',
+    author: body.author || parsed.author || null,
+    text: parsed.text,
+    source_filename: sourceFilename
+  };
+}
+
+async function parseEpubBody(body) {
+  const encoded = body.file_base64 || body.epub_base64;
+  if (typeof encoded !== 'string' || encoded.trim().length === 0) {
+    throw new Error('epub_base64_is_required');
+  }
+
+  const base64 = encoded.replace(/^data:[^,]+,/, '');
+  const zip = await JSZip.loadAsync(Buffer.from(base64, 'base64'));
+  const containerXml = await readZipText(zip, 'META-INF/container.xml');
+  const container = xmlParser.parse(containerXml);
+  const rootfile = firstItem(
+    container?.container?.rootfiles?.rootfile
+  );
+  const opfPath = rootfile?.['@_full-path'];
+  if (!opfPath) throw new Error('epub_missing_opf_path');
+
+  const opfXml = await readZipText(zip, opfPath);
+  const opf = xmlParser.parse(opfXml);
+  const pkg = opf.package || opf['opf:package'];
+  if (!pkg) throw new Error('epub_invalid_opf');
+
+  const metadata = pkg.metadata || {};
+  const manifestItems = toArray(pkg.manifest?.item);
+  const spineItems = toArray(pkg.spine?.itemref);
+  const manifestById = new Map(
+    manifestItems
+      .filter((item) => item?.['@_id'] && item?.['@_href'])
+      .map((item) => [item['@_id'], item])
+  );
+
+  const baseDir = path.posix.dirname(opfPath);
+  const blocks = [];
+  for (const itemref of spineItems) {
+    const idref = itemref?.['@_idref'];
+    const item = manifestById.get(idref);
+    if (!item || !isReadableHtmlItem(item)) continue;
+    const htmlPath = resolveZipPath(baseDir, item['@_href']);
+    const html = await readZipText(zip, htmlPath);
+    blocks.push(...extractXhtmlBlocks(html));
+  }
+
+  const text = blocks.join('\n\n').trim();
+  if (!text) throw new Error('epub_has_no_readable_text');
+
+  return {
+    title: firstText(metadata['dc:title'] || metadata.title),
+    author: firstText(metadata['dc:creator'] || metadata.creator),
+    text
+  };
+}
+
+async function readZipText(zip, filename) {
+  const file = zip.file(filename);
+  if (!file) throw new Error(`epub_missing_file:${filename}`);
+  return file.async('text');
+}
+
+function isReadableHtmlItem(item) {
+  const mediaType = item['@_media-type'] || '';
+  const href = item['@_href'] || '';
+  return mediaType === 'application/xhtml+xml' ||
+    mediaType === 'text/html' ||
+    /\.x?html?$/i.test(href);
+}
+
+function resolveZipPath(baseDir, href) {
+  const cleanHref = decodeURIComponent(String(href).split('#')[0]);
+  const joined = baseDir === '.'
+    ? cleanHref
+    : path.posix.join(baseDir, cleanHref);
+  return path.posix.normalize(joined).replace(/^(\.\.\/)+/, '');
+}
+
+function extractXhtmlBlocks(html) {
+  const parsed = xmlParser.parse(html);
+  const body = findXmlNode(parsed, 'body') || parsed;
+  const blocks = [];
+  collectXhtmlBlocks(body, blocks);
+  if (blocks.length > 0) return blocks;
+  const fallback = collectText(body);
+  return fallback ? [fallback] : [];
+}
+
+function collectXhtmlBlocks(node, blocks, key = '') {
+  if (Array.isArray(node)) {
+    for (const item of node) collectXhtmlBlocks(item, blocks, key);
+    return;
+  }
+
+  const localName = localXmlName(key);
+  if (isHeadingTag(localName)) {
+    const text = collectText(node);
+    if (text) blocks.push(`${'#'.repeat(Number(localName.slice(1)))} ${text}`);
+    return;
+  }
+  if (['p', 'li', 'blockquote'].includes(localName)) {
+    const text = collectText(node);
+    if (text) blocks.push(text);
+    return;
+  }
+
+  if (!node || typeof node !== 'object') return;
+  for (const [childKey, value] of Object.entries(node)) {
+    if (childKey.startsWith('@_') || childKey === '#text') continue;
+    collectXhtmlBlocks(value, blocks, childKey);
+  }
+}
+
+function findXmlNode(node, wantedLocalName) {
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = findXmlNode(item, wantedLocalName);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (!node || typeof node !== 'object') return null;
+  for (const [key, value] of Object.entries(node)) {
+    if (localXmlName(key) === wantedLocalName) return value;
+    const found = findXmlNode(value, wantedLocalName);
+    if (found) return found;
+  }
+  return null;
+}
+
+function collectText(node) {
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node).replace(/\s+/g, ' ').trim();
+  }
+  if (Array.isArray(node)) {
+    return node.map(collectText).filter(Boolean).join(' ').trim();
+  }
+  if (!node || typeof node !== 'object') return '';
+  return Object.entries(node)
+    .filter(([key]) => !key.startsWith('@_'))
+    .map(([, value]) => collectText(value))
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function firstText(value) {
+  const item = firstItem(value);
+  if (!item) return null;
+  const text = collectText(item);
+  return text || null;
+}
+
+function firstItem(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function toArray(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function localXmlName(name) {
+  return String(name || '').split(':').pop().toLowerCase();
+}
+
+function isHeadingTag(name) {
+  return /^h[1-6]$/.test(name);
+}
+
+function titleFromFilename(filename) {
+  if (!filename) return null;
+  return path.basename(filename).replace(/\.(epub|txt|md|markdown)$/i, '');
 }
 
 function importBook(store, body) {

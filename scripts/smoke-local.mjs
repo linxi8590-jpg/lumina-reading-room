@@ -5,9 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const serverEntry = path.join(root, 'apps/server/src/index.js');
+const serverRequire = createRequire(path.join(root, 'apps/server/package.json'));
+const JSZip = serverRequire('jszip');
 
 const checks = [];
 let child;
@@ -167,6 +170,25 @@ try {
   );
   checks.push('reimport');
 
+  const epub = await api(baseUrl, token, '/api/books/import', {
+    method: 'POST',
+    body: {
+      format: 'epub',
+      media_type: 'application/epub+zip',
+      source_filename: 'tiny.epub',
+      file_base64: await createTinyEpubBase64(),
+    },
+  });
+  assert(epub.status === 201, 'epub import failed');
+  assert(epub.body.book.title === 'Tiny EPUB', 'epub import should read metadata title');
+  const epubBookId = epub.body.book.id;
+  const epubContext = await api(baseUrl, token, `/api/books/${epubBookId}/unlocked-context`);
+  const epubText = epubContext.body.context.text;
+  assert(epubText.includes('EPUB first paragraph visible at start.'), 'epub context missing first paragraph');
+  assert(!epubText.includes('EPUB second paragraph visible after progress.'), 'epub context leaked second paragraph');
+  assert(!epubText.includes('EPUB future paragraph must not leak.'), 'epub context leaked future paragraph');
+  checks.push('epub');
+
   console.log(`Lumina local smoke passed: ${checks.join(', ')}`);
 } catch (error) {
   console.error(`Lumina local smoke failed: ${error.message}`);
@@ -232,4 +254,63 @@ async function getFreePort() {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+async function createTinyEpubBase64() {
+  const zip = new JSZip();
+  zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+  zip.file(
+    'META-INF/container.xml',
+    `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`,
+  );
+  zip.file(
+    'OPS/content.opf',
+    `<?xml version="1.0" encoding="UTF-8"?>
+<package version="3.0" unique-identifier="bookid" xmlns="http://www.idpf.org/2007/opf">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Tiny EPUB</dc:title>
+    <dc:creator>Smoke Test</dc:creator>
+  </metadata>
+  <manifest>
+    <item id="chapter-1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="chapter-2" href="chapter2.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="chapter-1"/>
+    <itemref idref="chapter-2"/>
+  </spine>
+</package>`,
+  );
+  zip.file(
+    'OPS/chapter1.xhtml',
+    `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+    <h1>EPUB Opening</h1>
+    <p>EPUB first paragraph visible at start.</p>
+    <p>EPUB second paragraph visible after progress.</p>
+  </body>
+</html>`,
+  );
+  zip.file(
+    'OPS/chapter2.xhtml',
+    `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+    <h1>EPUB Locked</h1>
+    <p>EPUB future paragraph must not leak.</p>
+  </body>
+</html>`,
+  );
+
+  const buffer = await zip.generateAsync({
+    type: 'nodebuffer',
+    mimeType: 'application/epub+zip',
+  });
+  return buffer.toString('base64');
 }

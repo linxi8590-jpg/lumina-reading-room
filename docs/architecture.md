@@ -49,6 +49,10 @@ Main tables:
 Book import is an upsert, not an append-only upload, when Lumina can identify
 the same source again.
 
+The local server currently accepts TXT, Markdown, and EPUB imports. EPUB files
+are parsed from their OPF spine into readable XHTML blocks before they enter the
+same section, paragraph, waterline, and note-anchor pipeline as plain text.
+
 The local server builds a `source_key` from `source_id` when provided, otherwise
 from `source_filename`, title, and author. If there is no filename, title and
 author are used as the fallback source key.

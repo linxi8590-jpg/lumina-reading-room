@@ -1,6 +1,7 @@
 # Local Development
 
 This guide starts the local server with one command and imports a tiny test book.
+The web uploader accepts TXT, Markdown, and EPUB files.
 
 ## 1. Prepare
 
@@ -87,6 +88,7 @@ npm run server:dev
 npm run smoke:local
 ```
 
-`npm run smoke:local` starts a temporary local server, imports a tiny book,
-checks that unread text is not returned to AI tools, saves an AI note, and then
-cleans up its temporary data. It does not print the temporary connector token.
+`npm run smoke:local` starts a temporary local server, imports a tiny Markdown
+book, re-imports it to check stable anchors, imports a generated EPUB, checks
+that unread text is not returned to AI tools, saves an AI note, and then cleans
+up its temporary data. It does not print the temporary connector token.

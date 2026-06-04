@@ -13,6 +13,8 @@ export default function Upload() {
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
   const [text, setText] = useState('')
+  const [fileKind, setFileKind] = useState<'text' | 'epub' | null>(null)
+  const [fileBase64, setFileBase64] = useState<string | null>(null)
   const [filename, setFilename] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,27 +39,55 @@ export default function Upload() {
   async function handleFile(file: File) {
     setFilename(file.name)
     if (!title) {
-      setTitle(file.name.replace(/\.(txt|md|markdown)$/i, ''))
+      setTitle(file.name.replace(/\.(txt|md|markdown|epub)$/i, ''))
     }
-    const content = await file.text()
-    setText(content)
+    setError(null)
+
+    if (isEpubFile(file)) {
+      setFileKind('epub')
+      setFileBase64(arrayBufferToBase64(await file.arrayBuffer()))
+      setText('')
+      return
+    }
+
+    setFileKind('text')
+    setFileBase64(null)
+    setText(await file.text())
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!title.trim() || !text.trim()) {
-      setError('标题和正文都不能为空')
+    if (!title.trim()) {
+      setError('标题不能为空')
+      return
+    }
+    if (fileKind === 'epub' && !fileBase64) {
+      setError('请重新选择 EPUB 文件')
+      return
+    }
+    if (fileKind !== 'epub' && !text.trim()) {
+      setError('正文不能为空')
       return
     }
     setSubmitting(true)
     setError(null)
     try {
-      const res = await api.post<ImportResponse>('/api/books/import', {
-        title: title.trim(),
-        author: author.trim() || undefined,
-        text,
-        source_filename: filename,
-      })
+      const body = fileKind === 'epub'
+        ? {
+            title: title.trim(),
+            author: author.trim() || undefined,
+            format: 'epub',
+            media_type: 'application/epub+zip',
+            file_base64: fileBase64,
+            source_filename: filename,
+          }
+        : {
+            title: title.trim(),
+            author: author.trim() || undefined,
+            text,
+            source_filename: filename,
+          }
+      const res = await api.post<ImportResponse>('/api/books/import', body)
       navigate(`/reader/${res.book.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : '导入失败')
@@ -75,7 +105,7 @@ export default function Upload() {
           </Link>
         </header>
         <p className="text-ink-700 mb-6">
-          选一个 TXT 或 Markdown 文件，或者直接把正文粘贴到下面。
+          选一个 TXT、Markdown 或 EPUB 文件，或者直接把正文粘贴到下面。
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -89,7 +119,7 @@ export default function Upload() {
             <input
               id="upload-file"
               type="file"
-              accept=".txt,.md,.markdown,text/plain,text/markdown"
+              accept=".txt,.md,.markdown,.epub,text/plain,text/markdown,application/epub+zip"
               onChange={(e) => {
                 const file = e.target.files?.[0]
                 if (file) handleFile(file)
@@ -99,6 +129,7 @@ export default function Upload() {
             {filename && (
               <p className="text-xs text-ink-500 mt-1" aria-live="polite">
                 已选择：{filename}
+                {fileKind === 'epub' ? '，EPUB 会在保存时解析成章节。' : ''}
               </p>
             )}
           </div>
@@ -147,10 +178,15 @@ export default function Upload() {
               id="upload-text"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              required
+              required={fileKind !== 'epub'}
+              disabled={fileKind === 'epub'}
               rows={10}
-              placeholder="把书的正文贴进来。支持 Markdown 标题（# / ## / ###）和「第 N 章」作为章节分隔。"
-              className="w-full bg-paper-100 border border-ink-500/20 rounded px-3 py-2 text-sm font-serif leading-relaxed"
+              placeholder={
+                fileKind === 'epub'
+                  ? '已选择 EPUB 文件，正文会由服务器从 EPUB 目录和章节里解析。'
+                  : '把书的正文贴进来。支持 Markdown 标题（# / ## / ###）和「第 N 章」作为章节分隔。'
+              }
+              className="w-full bg-paper-100 border border-ink-500/20 rounded px-3 py-2 text-sm font-serif leading-relaxed disabled:opacity-60"
             />
           </div>
 
@@ -174,4 +210,19 @@ export default function Upload() {
       </div>
     </main>
   )
+}
+
+function isEpubFile(file: File): boolean {
+  return file.type === 'application/epub+zip' || /\.epub$/i.test(file.name)
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  const chunkSize = 0x8000
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const chunk = bytes.subarray(offset, offset + chunkSize)
+    binary += String.fromCharCode(...chunk)
+  }
+  return btoa(binary)
 }

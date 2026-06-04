@@ -4,7 +4,7 @@ import { isConfigured } from '../lib/api'
 const STEPS = [
   {
     title: '先放书',
-    body: '贴入 TXT 或 Markdown，Lumina 会按标题和章节切成可阅读的段落。',
+    body: '上传 TXT、Markdown 或 EPUB，Lumina 会按标题和章节切成可阅读的段落。',
     href: '/upload',
     action: '上传一本书',
   },
