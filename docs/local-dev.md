@@ -84,4 +84,9 @@ Now unlocked context includes the first two paragraphs, but not the third.
 npm run quickstart
 npm run check:env
 npm run server:dev
+npm run smoke:local
 ```
+
+`npm run smoke:local` starts a temporary local server, imports a tiny book,
+checks that unread text is not returned to AI tools, saves an AI note, and then
+cleans up its temporary data. It does not print the temporary connector token.
