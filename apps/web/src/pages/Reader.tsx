@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { HTMLAttributes, ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, isConfigured } from '../lib/api'
 import ReadingWaterline from '../components/ReadingWaterline'
+import NotesPanel from '../components/NotesPanel'
+import type { ReadingNote } from '../components/NoteBubble'
 
 interface Book {
   id: string
@@ -51,6 +53,9 @@ export default function Reader() {
   const [payload, setPayload] = useState<BookPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [advancing, setAdvancing] = useState(false)
+  const [notes, setNotes] = useState<ReadingNote[]>([])
+  const [notesLoading, setNotesLoading] = useState(false)
+  const [notesError, setNotesError] = useState<string | null>(null)
   const configured = isConfigured()
 
   useEffect(() => {
@@ -64,6 +69,27 @@ export default function Reader() {
       })
       .catch((err) => {
         if (!cancelled) setError(err.message)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [bookId, configured])
+
+  useEffect(() => {
+    if (!configured || !bookId) return
+    let cancelled = false
+    setNotesLoading(true)
+    setNotesError(null)
+    api
+      .get<{ notes: ReadingNote[] }>(`/api/books/${bookId}/notes`)
+      .then((data) => {
+        if (!cancelled) setNotes(data.notes)
+      })
+      .catch((err) => {
+        if (!cancelled) setNotesError(err instanceof Error ? err.message : 'notes_failed')
+      })
+      .finally(() => {
+        if (!cancelled) setNotesLoading(false)
       })
     return () => {
       cancelled = true
@@ -121,6 +147,13 @@ export default function Reader() {
 
   const { book, sections, state } = payload
   const currentSection = sections[state.current_section_index]
+  const sectionsById = useMemo(() => {
+    const map = new Map<string, { title: string; section_index: number }>()
+    for (const s of sections) {
+      map.set(s.id, { title: s.title, section_index: s.section_index })
+    }
+    return map
+  }, [sections])
   const totalParagraphsInBook = sections.reduce(
     (sum, s) => sum + s.paragraphs.length,
     0,
@@ -310,14 +343,13 @@ export default function Reader() {
         </article>
 
         {/* 右：笔记栏 */}
-        <aside
-          aria-label="读书笔记栏"
-          className="hidden md:block border-l border-ink-500/10 p-4"
-        >
-          <h2 className="text-sm font-medium text-ink-700 mb-3">笔记</h2>
-          <p className="text-xs text-ink-500">
-            [NotesPanel · 待实现 — 你和 AI 在这本书上的所有笔记]
-          </p>
+        <aside className="hidden md:block border-l border-ink-500/10 p-4 overflow-y-auto">
+          <NotesPanel
+            notes={notes}
+            loading={notesLoading}
+            error={notesError}
+            sectionsById={sectionsById}
+          />
         </aside>
       </div>
     </main>
