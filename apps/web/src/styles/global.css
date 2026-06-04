@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper-50: #FBF7EE;
+  --paper-100: #F1EBDA;
+  --ink-900: #1C1B17;
+  --ink-700: #44423A;
+  --ink-500: #777264;
+  --lamp-500: #E8AC3D;
+  --lamp-200: #F5E0A7;
+  --sky-700: #2A3D5C;
+  --sky-500: #4A6789;
+  --red-500: #C46A5E;
+}
+
+[data-theme='dark'] {
+  --paper-50: #1A1814;
+  --paper-100: #25221C;
+  --ink-900: #F5EFE0;
+  --ink-700: #C4BBA8;
+  --ink-500: #8C8472;
+  --lamp-500: #FFC961;
+  --lamp-200: #4A3D1F;
+  --sky-700: #92AAD0;
+  --sky-500: #6D8AB4;
+  --red-500: #E18879;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper-50);
+  color: var(--ink-900);
+  font-family: 'Inter', 'Source Han Sans SC', system-ui, sans-serif;
+}
+
+.reading {
+  font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
+  line-height: 1.8;
+  max-width: 70ch;
+}
