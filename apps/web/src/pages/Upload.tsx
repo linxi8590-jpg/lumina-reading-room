@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, isConfigured } from '../lib/api'
 
@@ -42,7 +43,7 @@ export default function Upload() {
     setText(content)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!title.trim() || !text.trim()) {
       setError('标题和正文都不能为空')
