@@ -71,6 +71,8 @@ function maskToken(token: string) {
 
 export default function ConnectorConfig() {
   const [token, setToken] = useLocalStorage('lumina.connectorToken', '')
+  const [tokenDraft, setTokenDraft] = useState('')
+  const [tokenStatus, setTokenStatus] = useState('')
   const [serverUrl, setServerUrl] = useLocalStorage(
     'lumina.serverUrl',
     DEFAULT_SERVER_URL,
@@ -81,8 +83,25 @@ export default function ConnectorConfig() {
   const normalizedServerUrl = serverUrl.replace(/\/$/, '')
   const mcpUrl = normalizedServerUrl ? `${normalizedServerUrl}/mcp` : ''
   const isTokenSet = token.trim().length > 0
+  const hasTokenDraft = tokenDraft.trim().length > 0
   const isUrlSet = normalizedServerUrl.length > 0
   const tokenDisplay = showToken ? token : maskToken(token)
+
+  function saveTokenDraft() {
+    const nextToken = tokenDraft.trim()
+    if (!nextToken) return
+    setToken(nextToken)
+    setTokenDraft('')
+    setShowToken(false)
+    setTokenStatus('令牌已保存')
+  }
+
+  function clearToken() {
+    setToken('')
+    setTokenDraft('')
+    setShowToken(false)
+    setTokenStatus('令牌已清除')
+  }
 
   return (
     <main className="min-h-screen bg-paper-50 text-ink-900 px-6 py-12">
@@ -128,14 +147,48 @@ export default function ConnectorConfig() {
           <label className="block mb-2">
             <span className="sr-only">连接器令牌</span>
             <input
-              type={showToken ? 'text' : 'password'}
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="lrr_xxxxxxxxxxxxxxxxxxxxx"
+              type="password"
+              value={tokenDraft}
+              onChange={(e) => {
+                setTokenDraft(e.target.value)
+                setTokenStatus('')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  saveTokenDraft()
+                }
+              }}
+              placeholder={
+                isTokenSet
+                  ? '已保存令牌。粘贴新令牌可替换'
+                  : 'lrr_xxxxxxxxxxxxxxxxxxxxx'
+              }
               className="w-full bg-paper-50 border border-ink-500/20 rounded px-3 py-2 text-sm font-mono"
               aria-label="连接器令牌输入框"
             />
           </label>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <button
+              type="button"
+              onClick={saveTokenDraft}
+              disabled={!hasTokenDraft}
+              className="px-3 py-1 text-sm border border-ink-500/30 rounded hover:bg-paper-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              保存令牌
+            </button>
+            <button
+              type="button"
+              onClick={clearToken}
+              disabled={!isTokenSet}
+              className="px-3 py-1 text-sm border border-ink-500/30 rounded hover:bg-paper-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              清除令牌
+            </button>
+            <span className="sr-only" aria-live="polite">
+              {tokenStatus}
+            </span>
+          </div>
           <div className="flex items-center justify-between gap-3 mt-3">
             <code className="text-sm break-all flex-1 text-ink-700">
               {isTokenSet ? tokenDisplay : (
@@ -172,7 +225,7 @@ export default function ConnectorConfig() {
             <code>bash scripts/quickstart.sh</code>
           </pre>
           <p className="mt-2">
-            脚本会打印出服务器地址和令牌，把它们贴进上面两个框。
+            脚本会打印出服务器地址和令牌。服务器地址贴进地址框；令牌贴进令牌框后点一次"保存令牌"。
           </p>
         </section>
 
@@ -187,7 +240,7 @@ export default function ConnectorConfig() {
             怎么粘到 AI
           </h2>
           <p className="text-sm text-ink-700 mb-4">
-            选你正在用的 AI 客户端，按下面的步骤把上面那两个值贴进去。
+            选你正在用的 AI 客户端，按下面的步骤把保存后的服务器地址和令牌贴进去。
           </p>
 
           <div

@@ -9,4 +9,5 @@ output/
 coverage/
 .turbo/
 .vite/
+.playwright-cli/
 .DS_Store
