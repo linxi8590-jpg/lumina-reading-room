@@ -34,15 +34,25 @@ SSH 登录服务器：
 ssh root@your-server-ip
 ```
 
-在服务器里运行，把第一段 `DOMAIN=` 换成你自己的完整域名或子域名：
+在服务器里**先下载脚本**：
 
 ```bash
-DOMAIN=lumina.example.com; curl -fsSL -H 'Cache-Control: no-cache' "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" -o /tmp/lumina-install-vps.sh && grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh && bash /tmp/lumina-install-vps.sh --domain "$DOMAIN" --yes
+curl -fsSL -o /tmp/lumina-install-vps.sh "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?nocache=$(date +%s)"
 ```
 
-如果你不是用 `root` 登录，把最后的 `bash /tmp/lumina-install-vps.sh` 换成 `sudo bash /tmp/lumina-install-vps.sh`。
+**再运行**，把 `lumina.example.com` 换成你自己的完整子域名：
 
-`grep` 会打印安装脚本版本，确认你拿到的是最新脚本，不是旧缓存。
+```bash
+bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
+```
+
+如果你不是用 `root` 登录，把第二条最前面的 `bash` 换成 `sudo bash`。
+
+想确认拿到的是最新脚本，下载后可以多跑一行（可选）：
+
+```bash
+grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh
+```
 
 脚本会自动完成：
 
@@ -117,10 +127,16 @@ https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 
 ## 更新已经部署的服务器
 
-再次 SSH 登录服务器，重新运行同一条安装命令即可：
+再次 SSH 登录服务器，重新跑同样两条命令即可。先下载：
 
 ```bash
-DOMAIN=lumina.example.com; curl -fsSL -H 'Cache-Control: no-cache' "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" -o /tmp/lumina-install-vps.sh && grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh && bash /tmp/lumina-install-vps.sh --domain "$DOMAIN" --yes
+curl -fsSL -o /tmp/lumina-install-vps.sh "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?nocache=$(date +%s)"
+```
+
+再用你的子域名运行：
+
+```bash
+bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
 ```
 
 脚本会保留原来的连接令牌和数据目录，只更新代码和容器。
