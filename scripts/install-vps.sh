@@ -139,20 +139,50 @@ install_packages() {
   fi
 
   echo "Starting Docker service..."
+  local rc=0
   if command -v systemctl >/dev/null 2>&1; then
-    if ! systemctl enable --now docker </dev/null; then
-      warn "systemctl could not start Docker; trying service docker start."
+    echo "  [1/3] systemctl enable --now docker"
+    set +e
+    systemctl enable --now docker </dev/null
+    rc=$?
+    set -e
+    echo "  [1/3] systemctl exit=$rc"
+    if [[ "$rc" -ne 0 ]]; then
+      warn "systemctl could not start Docker (exit=$rc); trying service docker start."
       if command -v service >/dev/null 2>&1; then
-        service docker start </dev/null || true
+        echo "  [1b/3] service docker start"
+        set +e
+        service docker start </dev/null
+        rc=$?
+        set -e
+        echo "  [1b/3] service docker start exit=$rc"
       fi
     fi
   elif command -v service >/dev/null 2>&1; then
-    service docker start </dev/null || true
+    echo "  [1/3] service docker start"
+    set +e
+    service docker start </dev/null
+    rc=$?
+    set -e
+    echo "  [1/3] service docker start exit=$rc"
+  else
+    echo "  [1/3] no systemctl or service command; relying on existing daemon"
   fi
 
-  if ! docker info </dev/null >/dev/null 2>&1; then
-    die "Docker daemon is not running. Try: systemctl start docker"
+  echo "  [2/3] docker info (verify daemon is up)"
+  set +e
+  docker info </dev/null >/dev/null 2>&1
+  rc=$?
+  set -e
+  echo "  [2/3] docker info exit=$rc"
+  if [[ "$rc" -ne 0 ]]; then
+    echo "  Docker daemon could not be reached. Last 20 lines of journal:" >&2
+    if command -v journalctl >/dev/null 2>&1; then
+      journalctl -u docker --no-pager -n 20 2>&1 | sed 's/^/    /' >&2 || true
+    fi
+    die "Docker daemon is not running. Try: systemctl status docker"
   fi
+  echo "  [3/3] Docker is up: $(docker --version 2>/dev/null || echo unknown)"
 }
 
 ensure_swap_for_small_vps() {
@@ -338,6 +368,12 @@ main() {
   require_root
   prompt_domain
   validate_domain
+
+  local log_file="/var/log/lumina-install.log"
+  if : >> "$log_file" 2>/dev/null; then
+    exec > >(tee -a "$log_file") 2>&1
+    echo "Logging full installer output to $log_file"
+  fi
 
   echo "Installing Lumina for domain: $DOMAIN"
   echo "Install directory: $INSTALL_DIR"
