@@ -28,17 +28,25 @@ SSH into the VPS:
 ssh root@your-server-ip
 ```
 
-Run the installer. Replace the `DOMAIN=` value with your real full domain or subdomain:
+Download the installer first:
 
 ```bash
-DOMAIN=lumina.example.com; curl -fsSL -H 'Cache-Control: no-cache' "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" -o /tmp/lumina-install-vps.sh && grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh && bash /tmp/lumina-install-vps.sh --domain "$DOMAIN" --yes
+curl -fsSL -o /tmp/lumina-install-vps.sh "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?nocache=$(date +%s)"
 ```
 
-If you are not logged in as `root`, replace `bash /tmp/lumina-install-vps.sh`
-with `sudo bash /tmp/lumina-install-vps.sh`.
+Then run it. Replace `lumina.example.com` with your real full domain or subdomain:
 
-The `grep` command prints the installer revision so you can confirm that the VPS is
-running the current installer rather than an old cached copy.
+```bash
+bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
+```
+
+If you are not logged in as `root`, replace the leading `bash` with `sudo bash`.
+
+Optional check:
+
+```bash
+grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh
+```
 
 The installer will:
 
@@ -86,10 +94,16 @@ HTTP and HTTPS traffic to this VPS.
 
 ## Update Later
 
-Run the same command again:
+Run the same two commands again. Download:
 
 ```bash
-DOMAIN=lumina.example.com; curl -fsSL -H 'Cache-Control: no-cache' "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" -o /tmp/lumina-install-vps.sh && grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh && bash /tmp/lumina-install-vps.sh --domain "$DOMAIN" --yes
+curl -fsSL -o /tmp/lumina-install-vps.sh "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?nocache=$(date +%s)"
+```
+
+Then run:
+
+```bash
+bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
 ```
 
 The installer preserves the existing connector token and data directory, then
