@@ -16,6 +16,8 @@ export default defineConfig({
     proxy: {
       '/health': { target: SERVER_TARGET, changeOrigin: true },
       '/mcp': { target: SERVER_TARGET, changeOrigin: true },
+      '/sse': { target: SERVER_TARGET, changeOrigin: true },
+      '/message': { target: SERVER_TARGET, changeOrigin: true },
       '/api': { target: SERVER_TARGET, changeOrigin: true },
     },
   },

@@ -153,7 +153,8 @@ https://your-domain.example/mcp        [Copy]
 Connector Token
 lrr_abcd1234••••••••••                [Show] [Copy]
 Authorization: Bearer lrr_abcd...      [Copy]
-https://.../mcp?token=lrr_abcd...      [Copy]
+https://.../sse?token=lrr_abcd...      [Claude.ai Copy]
+https://.../mcp?token=lrr_abcd...      [ChatGPT Copy]
 
 This token is the key to your reading room. Do not post it online.
 ```
@@ -193,5 +194,6 @@ Canonical connector values:
 ```text
 URL: https://your-domain.example/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
-Web connector URL: https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+Claude.ai connector URL: https://your-domain.example/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+ChatGPT connector URL: https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```

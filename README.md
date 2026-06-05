@@ -73,6 +73,9 @@ Open the reading room:
 MCP connector:
   Server URL: https://lumina.example.com/mcp
   Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
+
+Claude.ai connector URL:
+  https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 保存好这段输出。`lrr_...` 是书房钥匙，不要公开发到 GitHub issue、论坛或截图里。
@@ -103,10 +106,11 @@ Server URL: https://lumina.example.com/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-如果客户端只让你填写一个 URL，就用：
+如果客户端只让你填写一个 URL，按客户端选择：
 
 ```text
-https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+Claude.ai: https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+ChatGPT:   https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 网页里的连接配置页会按 ChatGPT、Claude、Codex、Claude Code 分别生成可复制配置。

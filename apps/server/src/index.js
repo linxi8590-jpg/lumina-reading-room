@@ -19,8 +19,88 @@ const webDistDir = path.resolve(rootDir, process.env.LUMINA_WEB_DIST || 'apps/we
 const connectorToken = process.env.LUMINA_CONNECTOR_TOKEN || '';
 const maxJsonBodyBytes = Number(process.env.LUMINA_MAX_JSON_BODY_BYTES || 50 * 1024 * 1024);
 
+const mcpProtocolVersion = '2024-11-05';
+const mcpSseSessions = new Map();
 const noteTypes = new Set(['reflection', 'highlight', 'quote', 'question', 'review_card']);
 const authorTypes = new Set(['user', 'ai']);
+const mcpTools = [
+  {
+    name: 'get_current_reading_state',
+    description: 'Get the current book, reading position, and unlocked reading position.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' }
+      }
+    }
+  },
+  {
+    name: 'get_current_passage',
+    description: 'Read the paragraph the reader is currently on.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' }
+      }
+    }
+  },
+  {
+    name: 'get_unlocked_context',
+    description: 'Read only the part of the book that the reader has already unlocked.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' },
+        limit: { type: 'number', description: 'Maximum characters to return.', default: 12000 }
+      }
+    }
+  },
+  {
+    name: 'get_reading_notes',
+    description: 'List notes that are not beyond the reader unlocked position.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' },
+        section_id: { type: 'string', description: 'Optional section id to filter notes.' }
+      }
+    }
+  },
+  {
+    name: 'save_ai_note',
+    description: 'Save an AI note at or before the reader unlocked position.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' },
+        section_id: { type: 'string', description: 'Optional section id.' },
+        section_index: { type: 'number', description: 'Optional section number, starting at 0.' },
+        paragraph_index: { type: 'number', description: 'Optional paragraph number, starting at 0.' },
+        note_type: {
+          type: 'string',
+          enum: [...noteTypes],
+          description: 'Kind of note to save.'
+        },
+        content: { type: 'string', description: 'Note text.' },
+        model_name: { type: 'string', description: 'Optional AI model name.' }
+      },
+      required: ['content']
+    }
+  },
+  {
+    name: 'advance_reading_progress',
+    description: 'Move the reader position and unlock text up to that point.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' },
+        section_index: { type: 'number', description: 'Section number, starting at 0.' },
+        paragraph_index: { type: 'number', description: 'Paragraph number, starting at 0.' }
+      },
+      required: ['section_index', 'paragraph_index']
+    }
+  }
+];
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
@@ -50,7 +130,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (url.pathname.startsWith('/api/') || url.pathname === '/mcp') {
+    if (url.pathname.startsWith('/api/') || isConnectorPath(url.pathname)) {
       if (!isAuthorized(req)) {
         sendJson(res, 401, { error: 'unauthorized' });
         return;
@@ -59,6 +139,16 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === '/mcp') {
       await handleMcp(req, res);
+      return;
+    }
+
+    if (url.pathname === '/sse') {
+      await handleMcpSse(req, res, url);
+      return;
+    }
+
+    if (url.pathname === '/message' || url.pathname === '/messages') {
+      await handleMcpSseMessage(req, res, url);
       return;
     }
 
@@ -125,6 +215,13 @@ function sendJson(res, status, body) {
   res.end(JSON.stringify(body, null, 2));
 }
 
+function isConnectorPath(pathname) {
+  return pathname === '/mcp' ||
+    pathname === '/sse' ||
+    pathname === '/message' ||
+    pathname === '/messages';
+}
+
 async function serveStaticWeb(req, res, url) {
   if (!['GET', 'HEAD'].includes(req.method || '')) return false;
 
@@ -133,7 +230,7 @@ async function serveStaticWeb(req, res, url) {
     sendJson(res, 400, { error: 'bad_path' });
     return true;
   }
-  if (pathname.startsWith('/api/') || pathname === '/mcp' || pathname === '/health') return false;
+  if (pathname.startsWith('/api/') || isConnectorPath(pathname) || pathname === '/health') return false;
 
   const cleanPath = pathname === '/' ? '/index.html' : pathname;
   let filePath = path.resolve(webDistDir, `.${cleanPath}`);
@@ -327,14 +424,7 @@ async function handleApi(req, res, url) {
 async function handleMcp(req, res) {
   if (req.method === 'GET') {
     sendJson(res, 200, {
-      tools: [
-        'get_current_reading_state',
-        'get_current_passage',
-        'get_unlocked_context',
-        'get_reading_notes',
-        'save_ai_note',
-        'advance_reading_progress'
-      ]
+      tools: mcpTools.map((tool) => tool.name)
     });
     return;
   }
@@ -347,6 +437,119 @@ async function handleMcp(req, res) {
   const body = await readJsonBody(req);
   const tool = body.tool || body.name;
   const args = body.arguments || body.args || {};
+  const { result } = await callLuminaTool(tool, args);
+
+  sendJson(res, 200, { tool, result });
+}
+
+async function handleMcpSse(req, res, url) {
+  if (req.method !== 'GET') {
+    sendJson(res, 405, { error: 'method_not_allowed' });
+    return;
+  }
+
+  const sessionId = crypto.randomUUID();
+  const token = url.searchParams.get('token') || '';
+  const endpointPath = `/message?sessionId=${encodeURIComponent(sessionId)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+  const messageEndpoint = publicUrlFor(req, endpointPath);
+  const keepAlive = setInterval(() => {
+    if (!res.writableEnded) res.write(': keepalive\n\n');
+  }, 25000);
+  keepAlive.unref?.();
+
+  mcpSseSessions.set(sessionId, { res, keepAlive, created_at: Date.now() });
+  req.on('close', () => {
+    const session = mcpSseSessions.get(sessionId);
+    if (session) clearInterval(session.keepAlive);
+    mcpSseSessions.delete(sessionId);
+  });
+
+  res.writeHead(200, {
+    'content-type': 'text/event-stream; charset=utf-8',
+    'cache-control': 'no-cache, no-transform',
+    connection: 'keep-alive',
+    'x-accel-buffering': 'no'
+  });
+  res.flushHeaders?.();
+  res.write(': connected\n\n');
+  writeSseEvent(res, 'endpoint', messageEndpoint);
+}
+
+async function handleMcpSseMessage(req, res, url) {
+  if (req.method !== 'POST') {
+    sendJson(res, 405, { error: 'method_not_allowed' });
+    return;
+  }
+
+  const sessionId = url.searchParams.get('sessionId');
+  const session = sessionId ? mcpSseSessions.get(sessionId) : null;
+  if (!session || session.res.writableEnded) {
+    sendJson(res, 404, { error: 'sse_session_not_found' });
+    return;
+  }
+
+  const body = await readJsonBody(req);
+  const messages = Array.isArray(body) ? body : [body];
+  let sent = 0;
+  for (const message of messages) {
+    const response = await handleMcpJsonRpc(message);
+    if (response) {
+      writeSseEvent(session.res, 'message', response);
+      sent += 1;
+    }
+  }
+  sendJson(res, 202, { accepted: true, sent });
+}
+
+async function handleMcpJsonRpc(message) {
+  const id = message?.id;
+  if (!message || typeof message.method !== 'string') {
+    return id === undefined ? null : jsonRpcError(id, -32600, 'Invalid Request');
+  }
+
+  try {
+    switch (message.method) {
+      case 'initialize':
+        return jsonRpcResult(id, {
+          protocolVersion: mcpProtocolVersion,
+          capabilities: { tools: {} },
+          serverInfo: { name: 'Lumina Reading Room', version: '0.1.0' }
+        });
+      case 'notifications/initialized':
+        return null;
+      case 'ping':
+        return jsonRpcResult(id, {});
+      case 'tools/list':
+        return jsonRpcResult(id, { tools: mcpTools });
+      case 'tools/call': {
+        const params = message.params || {};
+        try {
+          const { result } = await callLuminaTool(params.name, params.arguments || {});
+          return jsonRpcResult(id, {
+            content: [{ type: 'text', text: formatToolResultForMcp(result) }]
+          });
+        } catch (error) {
+          return jsonRpcResult(id, {
+            content: [{ type: 'text', text: `Lumina error: ${error.message}` }],
+            isError: true
+          });
+        }
+      }
+      default:
+        return jsonRpcError(id, -32601, `Method not found: ${message.method}`);
+    }
+  } catch (error) {
+    return jsonRpcError(id, -32603, error.message);
+  }
+}
+
+async function callLuminaTool(tool, args = {}) {
+  if (!mcpTools.some((item) => item.name === tool)) {
+    const error = new Error('unknown_tool');
+    error.tool = tool;
+    throw error;
+  }
+
   const store = await readStore();
   let result;
   let didWrite = false;
@@ -381,12 +584,48 @@ async function handleMcp(req, res) {
       didWrite = true;
       break;
     default:
-      sendJson(res, 400, { error: 'unknown_tool', tool });
-      return;
+      throw new Error('unknown_tool');
   }
 
   if (didWrite) await writeStore(store);
-  sendJson(res, 200, { tool, result });
+  return { tool, result };
+}
+
+function formatToolResultForMcp(result) {
+  if (typeof result === 'string') return result;
+  return JSON.stringify(result, null, 2);
+}
+
+function jsonRpcResult(id, result) {
+  if (id === undefined) return null;
+  return { jsonrpc: '2.0', id, result };
+}
+
+function jsonRpcError(id, code, message) {
+  if (id === undefined) return null;
+  return {
+    jsonrpc: '2.0',
+    id,
+    error: { code, message }
+  };
+}
+
+function writeSseEvent(res, event, data) {
+  if (res.writableEnded) return;
+  const payload = typeof data === 'string' ? data : JSON.stringify(data);
+  res.write(`event: ${event}\n`);
+  for (const line of payload.split(/\r?\n/)) {
+    res.write(`data: ${line}\n`);
+  }
+  res.write('\n');
+}
+
+function publicUrlFor(req, pathname) {
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || `127.0.0.1:${port}`);
+  const localHost = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(host);
+  const proto = forwardedProto || (req.socket.encrypted ? 'https' : (localHost ? 'http' : 'https'));
+  return `${proto}://${host}${pathname}`;
 }
 
 async function normalizeImportBody(body) {

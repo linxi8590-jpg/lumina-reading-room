@@ -68,6 +68,9 @@ Open the reading room:
 MCP connector:
   Server URL: https://lumina.example.com/mcp
   Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
+
+Claude.ai connector URL:
+  https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 Open `https://lumina.example.com` in a phone or desktop browser.
@@ -165,7 +168,7 @@ Expected health shape:
 
 ## What Runs
 
-- `server`: serves the web app, API, and `/mcp` connector on port `8787`.
+- `server`: serves the web app, API, `/mcp`, and `/sse` connectors on port `8787`.
 - `caddy`: terminates HTTPS and reverse-proxies to `server`.
 
 Books, notes, and progress live in the host directory configured by
@@ -201,17 +204,18 @@ Use the exact connector token from:
 sudo grep '^LUMINA_CONNECTOR_TOKEN=' /opt/lumina-reading-room/repo/deploy/docker/.env
 ```
 
-Then configure the AI client with either:
+Then configure clients with:
 
 ```text
 Server URL: https://lumina.example.com/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-or:
+If the client only accepts one URL, choose the matching one:
 
 ```text
-https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+Claude.ai: https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+ChatGPT:   https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 ## Safety Notes

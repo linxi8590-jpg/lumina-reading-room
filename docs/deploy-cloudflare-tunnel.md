@@ -74,13 +74,25 @@ then your connector URL is:
 https://example-name.trycloudflare.com/mcp
 ```
 
+Claude.ai uses:
+
+```text
+https://example-name.trycloudflare.com/sse?token=<your-token>
+```
+
 ## 3. Connect An AI Client
 
-In ChatGPT Apps, Claude.ai, or another remote MCP client, use:
+In ChatGPT Apps or another HTTP MCP client, use:
 
 ```text
 Server URL: https://example-name.trycloudflare.com/mcp
 Authorization: Bearer <your-token>
+```
+
+In Claude.ai custom connector, paste this one URL:
+
+```text
+https://example-name.trycloudflare.com/sse?token=<your-token>
 ```
 
 `<your-token>` is the `LUMINA_CONNECTOR_TOKEN` value in your local `.env`.

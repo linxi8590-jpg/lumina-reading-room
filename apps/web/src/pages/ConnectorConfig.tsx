@@ -21,10 +21,10 @@ const AI_CLIENTS: AiClientGuide[] = [
     steps: [
       '确认 Lumina 地址是公网 HTTPS，不是 localhost。',
       '在 Claude 打开 Customize > Connectors，添加 custom connector。',
-      '把下面生成的 Connector URL 粘进去，名字写 Lumina。',
+      '把下面生成的 Claude.ai Connector URL 粘进去，名字写 Lumina。',
       '保存后在对话左下角的 Connectors 菜单里启用 Lumina。',
     ],
-    note: 'Claude 的远程连接器由 Anthropic 云端访问，所以本机 localhost 地址不能直接使用。',
+    note: 'Claude.ai 要用 /sse?token=... 这种连接器地址；本机 localhost 地址不能直接使用。',
     docsLabel: 'Claude custom connectors 文档',
     docsHref:
       'https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp',
@@ -135,16 +135,21 @@ export default function ConnectorConfig() {
 
   const normalizedServerUrl = serverUrl.replace(/\/$/, '')
   const mcpUrl = normalizedServerUrl ? `${normalizedServerUrl}/mcp` : ''
+  const sseUrl = normalizedServerUrl ? `${normalizedServerUrl}/sse` : ''
   const isTokenSet = token.trim().length > 0
   const hasTokenDraft = tokenDraft.trim().length > 0
   const isUrlSet = normalizedServerUrl.length > 0
   const tokenDisplay = showToken ? token : maskToken(token)
   const tokenValue = isTokenSet ? token : '<connector-token>'
   const authHeaderValue = `Bearer ${tokenValue}`
-  const connectorUrlWithToken =
+  const mcpConnectorUrlWithToken =
     mcpUrl && isTokenSet ? `${mcpUrl}?token=${encodeURIComponent(token)}` : ''
-  const connectorUrlPreview =
-    connectorUrlWithToken || 'https://your-domain.example/mcp?token=<connector-token>'
+  const mcpConnectorUrlPreview =
+    mcpConnectorUrlWithToken || 'https://your-domain.example/mcp?token=<connector-token>'
+  const claudeConnectorUrlWithToken =
+    sseUrl && isTokenSet ? `${sseUrl}?token=${encodeURIComponent(token)}` : ''
+  const claudeConnectorUrlPreview =
+    claudeConnectorUrlWithToken || 'https://your-domain.example/sse?token=<connector-token>'
   const needsPublicHttps =
     normalizedServerUrl.startsWith('http://localhost') ||
     normalizedServerUrl.startsWith('http://127.0.0.1') ||
@@ -337,15 +342,15 @@ http_headers = { Authorization = "${authHeaderValue}" }`
           </div>
           <div className="flex items-center justify-between gap-3 mt-2">
             <code className="text-sm break-all flex-1 text-ink-700">
-              {configReady ? connectorUrlWithToken : (
+              {configReady ? claudeConnectorUrlWithToken : (
                 <span className="text-ink-500">
-                  https://your-domain.example/mcp?token=[请填写令牌]
+                  https://your-domain.example/sse?token=[请填写令牌]
                 </span>
               )}
             </code>
             <CopyButton
-              value={connectorUrlWithToken}
-              label="网页连接器 URL"
+              value={claudeConnectorUrlWithToken}
+              label="Claude.ai 连接器 URL"
               disabled={!configReady}
             />
           </div>
@@ -431,16 +436,16 @@ http_headers = { Authorization = "${authHeaderValue}" }`
                     client.id === 'claude-desktop') && (
                     <>
                       <ConfigBlock
-                        title="Connector URL（含 token）"
-                        description="Claude.ai / Claude Desktop 的远程 connector URL；适合只让你填 URL 的界面。这个链接包含钥匙。"
-                        value={connectorUrlPreview}
+                        title="Claude.ai Connector URL（含 token）"
+                        description="Claude.ai 里直接粘这一条；它应该长得像 https://你的域名/sse?token=..."
+                        value={claudeConnectorUrlPreview}
                         copyLabel="Claude Connector URL"
                         disabled={!configReady}
                       />
                       <ConfigBlock
-                        title="Connector URL（不含 token）"
-                        description="如果界面支持 OAuth / authorization 单独配置，可以用这个干净 URL。"
-                        value={mcpUrl || 'https://your-domain.example/mcp'}
+                        title="Claude.ai Connector URL（不含 token）"
+                        description="如果界面能单独填写授权信息，URL 填这一行。"
+                        value={sseUrl || 'https://your-domain.example/sse'}
                         copyLabel="Claude clean Connector URL"
                         disabled={!isUrlSet}
                       />
@@ -458,7 +463,7 @@ http_headers = { Authorization = "${authHeaderValue}" }`
                       <ConfigBlock
                         title="ChatGPT 连接器 URL（含 token）"
                         description="给 ChatGPT Apps / Developer mode 里只填 remote MCP URL 的界面使用。这个链接包含钥匙。"
-                        value={connectorUrlPreview}
+                        value={mcpConnectorUrlPreview}
                         copyLabel="ChatGPT 连接器 URL"
                         disabled={!configReady}
                       />

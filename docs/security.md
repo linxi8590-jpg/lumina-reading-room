@@ -14,7 +14,7 @@ The important risks are:
 
 ## Baseline mitigations
 
-- Every `/mcp` and API request must require a connector token. Prefer `Authorization: Bearer <token>` when the client supports headers; use `?token=<token>` only for web connector UIs that can only accept a URL.
+- Every `/mcp`, `/sse`, and API request must require a connector token. Prefer `Authorization: Bearer <token>` when the client supports headers; use `?token=<token>` only for web connector UIs that can only accept a URL.
 - Tokens should be generated locally and stored by the user.
 - Tools must filter by reading waterline before returning text.
 - There should be no tool that fetches future content.

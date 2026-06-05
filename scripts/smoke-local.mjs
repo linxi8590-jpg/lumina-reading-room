@@ -120,6 +120,48 @@ try {
   );
   checks.push('mcp_url_token');
 
+  const sse = await openSse(baseUrl, token);
+  try {
+    await postJson(sse.endpoint, {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {},
+    });
+    const initialized = JSON.parse((await sse.readEvent()).data);
+    assert(initialized.result.serverInfo.name === 'Lumina Reading Room', 'SSE initialize failed');
+
+    await postJson(sse.endpoint, {
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/list',
+      params: {},
+    });
+    const tools = JSON.parse((await sse.readEvent()).data);
+    assert(
+      tools.result.tools.some((tool) => tool.name === 'get_unlocked_context'),
+      'SSE tools/list did not expose Lumina tools',
+    );
+
+    await postJson(sse.endpoint, {
+      jsonrpc: '2.0',
+      id: 3,
+      method: 'tools/call',
+      params: {
+        name: 'get_unlocked_context',
+        arguments: { book_id: bookId },
+      },
+    });
+    const sseContext = JSON.parse((await sse.readEvent()).data);
+    assert(
+      sseContext.result.content[0].text.includes('Second paragraph visible after progress.'),
+      'SSE tools/call did not return unlocked context',
+    );
+  } finally {
+    await sse.close();
+  }
+  checks.push('mcp_sse');
+
   const note = await api(baseUrl, token, '/mcp', {
     method: 'POST',
     body: {
@@ -302,6 +344,88 @@ async function api(baseUrl, token, pathname, options = {}) {
   const raw = await res.text();
   const body = raw ? JSON.parse(raw) : null;
   return { status: res.status, body };
+}
+
+async function openSse(baseUrl, token) {
+  const res = await fetch(`${baseUrl}/sse?token=${encodeURIComponent(token)}`);
+  assert(res.status === 200, 'SSE endpoint should accept connector token');
+  const reader = res.body.getReader();
+  const readEvent = createSseEventReader(reader);
+  let endpoint;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const event = await readEvent();
+    if (event.event === 'endpoint') {
+      endpoint = event.data;
+      break;
+    }
+  }
+  assert(endpoint, 'SSE endpoint did not send message endpoint');
+  return {
+    endpoint,
+    readEvent,
+    close: () => reader.cancel().catch(() => {}),
+  };
+}
+
+function createSseEventReader(reader) {
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  return async function readEvent(timeoutMs = 3000) {
+    const started = Date.now();
+    while (Date.now() - started < timeoutMs) {
+      const separator = buffer.indexOf('\n\n');
+      if (separator !== -1) {
+        const raw = buffer.slice(0, separator);
+        buffer = buffer.slice(separator + 2);
+        const event = parseSseEvent(raw);
+        if (event) return event;
+        continue;
+      }
+
+      const remaining = Math.max(1, timeoutMs - (Date.now() - started));
+      const { done, value } = await withTimeout(reader.read(), remaining);
+      if (done) throw new Error('SSE stream ended before expected event');
+      buffer += decoder.decode(value, { stream: true });
+    }
+    throw new Error('Timed out waiting for SSE event');
+  };
+}
+
+function parseSseEvent(raw) {
+  let event = 'message';
+  const data = [];
+  for (const line of raw.split(/\r?\n/)) {
+    if (!line || line.startsWith(':')) continue;
+    if (line.startsWith('event:')) {
+      event = line.slice('event:'.length).trim();
+    } else if (line.startsWith('data:')) {
+      data.push(line.slice('data:'.length).trimStart());
+    }
+  }
+  if (data.length === 0) return null;
+  return { event, data: data.join('\n') };
+}
+
+async function postJson(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  assert(res.status === 202, `SSE message post should be accepted, got ${res.status}`);
+}
+
+async function withTimeout(promise, timeoutMs) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('operation timed out')), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function waitForHealth(baseUrl, getServerOutput) {

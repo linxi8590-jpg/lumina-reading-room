@@ -14,7 +14,9 @@ if (!token) {
 }
 
 const mcpUrl = `${serverUrl}/mcp`;
+const sseUrl = `${serverUrl}/sse`;
 const connectorUrl = `${mcpUrl}?token=${encodeURIComponent(token)}`;
+const claudeConnectorUrl = `${sseUrl}?token=${encodeURIComponent(token)}`;
 const authorization = `Bearer ${token}`;
 
 const openAiTool = {
@@ -65,7 +67,10 @@ http_headers = { Authorization = "${authorization}" }`;
 
 console.log('Lumina connector config');
 console.log('');
-console.log('Claude.ai / ChatGPT web connector URL');
+console.log('Claude.ai connector URL');
+console.log(claudeConnectorUrl);
+console.log('');
+console.log('ChatGPT web connector URL');
 console.log(connectorUrl);
 console.log('');
 console.log('MCP URL');

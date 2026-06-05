@@ -18,10 +18,11 @@ Server URL: https://your-domain.example/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-有些网页端连接器界面只让你填一个 URL。这时可以用带 token 的一行 URL：
+有些网页端连接器界面只让你填一个 URL。Claude.ai 和 ChatGPT 需要的地址不一样：
 
 ```text
-https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+Claude.ai: https://your-domain.example/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+ChatGPT:   https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 这个 URL 本身也等同于钥匙，不要公开截图。
@@ -40,7 +41,8 @@ https://your-domain.example/mcp        [拷贝]
 [粘贴令牌到这里]                     [保存令牌]
 lrr_abcd1234••••••••••                [显示] [拷贝]
 Authorization: Bearer lrr_abcd...      [拷贝]
-https://.../mcp?token=lrr_abcd...      [拷贝]
+https://.../sse?token=lrr_abcd...      [Claude.ai 拷贝]
+https://.../mcp?token=lrr_abcd...      [ChatGPT 拷贝]
 
 这是你书房的钥匙。不要发到网上。
 ```
@@ -81,8 +83,10 @@ Claude.ai、Claude Desktop 和 Claude mobile 的远程 connector 是同一套账
 
 ```text
 Connector name: Lumina
-Connector URL: https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+Connector URL: https://your-domain.example/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
+
+注意：Claude.ai 这里要用 `/sse?token=...`。如果填成 `/mcp?token=...`，Claude.ai 会显示无法连接。
 
 Claude 的远程 connector 从 Anthropic 云端访问你的 server，所以 `localhost` 不可用。正式使用请用自己的公网 HTTPS 域名；Cloudflare Tunnel 只适合临时测试。
 
@@ -150,7 +154,7 @@ https://your-domain.example/health
 }
 ```
 
-这只说明服务器活着。AI 能不能进书房，还要看 `/mcp` 的令牌配置是否正确。
+这只说明服务器活着。AI 能不能进书房，还要看连接器令牌是否正确。Claude.ai 看 `/sse?token=...`，ChatGPT / Codex 这类 HTTP MCP 客户端看 `/mcp`。
 
 ## 工具列表
 

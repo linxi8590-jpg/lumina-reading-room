@@ -382,7 +382,10 @@ print_summary() {
   echo "  Server URL: https://$DOMAIN/mcp"
   echo "  Authorization: Bearer $token"
   echo
-  echo "If a client only accepts one URL:"
+  echo "Claude.ai connector URL:"
+  echo "  https://$DOMAIN/sse?token=$token"
+  echo
+  echo "ChatGPT connector URL if it only accepts one URL:"
   echo "  https://$DOMAIN/mcp?token=$token"
   echo
   echo "Books and notes are stored in:"
