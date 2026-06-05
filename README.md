@@ -59,6 +59,18 @@ docs/security.md
 
 ## 选择一种安装方式
 
+不确定自己需不需要域名，先看这里：
+
+```text
+docs/deployment-options.md
+```
+
+最短结论：
+
+- 只在自己电脑上读书和写笔记：不需要域名。
+- 想让 ChatGPT web、Claude.ai 等远程 AI 客户端连接：需要公网 HTTPS 地址。
+- 不想买域名也能临时测试：可以用 Cloudflare Tunnel 这类临时 HTTPS 隧道。
+
 ### 方式 A：Supabase 模式
 
 适合不想买服务器的人。
@@ -84,7 +96,7 @@ docs/deploy-supabase.md
 你需要：
 
 - 一台能跑 Docker 的机器。
-- 一个可以访问的 HTTPS 域名。
+- 一个可以访问的 HTTPS 地址。长期使用建议绑定自己的域名；临时测试可以用隧道或平台自带子域名。
 
 看这里：
 

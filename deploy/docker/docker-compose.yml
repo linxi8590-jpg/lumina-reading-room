@@ -26,8 +26,24 @@ services:
     depends_on:
       - postgres
     ports:
-      - "8787:8787"
+      - "127.0.0.1:8787:8787"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      LUMINA_DOMAIN: ${LUMINA_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - server
+    ports:
+      - "80:80"
+      - "443:443"
 
 volumes:
   postgres_data:
-
+  caddy_data:
+  caddy_config:
