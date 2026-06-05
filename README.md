@@ -57,6 +57,29 @@ docs/security.md
 
 还没最终决定的公开仓库事项：项目 license。正式复用或再分发前请等仓库加入 `LICENSE` 文件。
 
+## 先跑起来
+
+你只需要先装好 Node.js，然后在项目目录里跑：
+
+```bash
+npm run quickstart
+npm run dev:mobile
+```
+
+`quickstart` 会生成 `.env`、检查环境，并在依赖缺失时自动执行安装。`dev:mobile` 会同时启动 server 和网页，并打印手机可以直接打开的地址。
+
+如果只在电脑浏览器测试，打开：
+
+```text
+http://localhost:5173/
+```
+
+如果要在手机测试，打开 `dev:mobile` 打印的局域网地址，例如：
+
+```text
+http://192.168.1.20:5173/
+```
+
 ## 选择一种安装方式
 
 不确定自己需不需要域名，先看这里：

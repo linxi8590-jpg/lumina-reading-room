@@ -7,9 +7,7 @@ cd "$ROOT"
 PORT="${PORT:-8787}"
 WEB_PORT="${WEB_PORT:-5173}"
 
-if [[ ! -f "$ROOT/.env" ]] || ! grep -q '^LUMINA_CONNECTOR_TOKEN=' "$ROOT/.env"; then
-  bash "$ROOT/scripts/quickstart.sh"
-fi
+bash "$ROOT/scripts/quickstart.sh"
 
 LAN_IP="${LUMINA_LAN_IP:-}"
 if [[ -z "$LAN_IP" ]]; then

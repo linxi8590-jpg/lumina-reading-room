@@ -12,6 +12,21 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! node "$ROOT/scripts/check-env.mjs" --deps-only >/dev/null 2>&1; then
+  echo "Installing dependencies..."
+  if command -v pnpm >/dev/null 2>&1; then
+    pnpm install
+  elif command -v corepack >/dev/null 2>&1; then
+    corepack pnpm install
+  elif command -v npx >/dev/null 2>&1; then
+    npx --yes pnpm@10.0.0 install
+  else
+    echo "Dependencies are not installed, and pnpm/corepack/npx was not found."
+    echo "Install pnpm, then run: pnpm install"
+    exit 1
+  fi
+fi
+
 if [[ -f "$ENV_FILE" ]] && grep -q '^LUMINA_CONNECTOR_TOKEN=' "$ENV_FILE"; then
   TOKEN="$(grep '^LUMINA_CONNECTOR_TOKEN=' "$ENV_FILE" | tail -n 1 | cut -d= -f2-)"
   echo ".env already has a connector token."
@@ -28,8 +43,11 @@ fi
 node "$ROOT/scripts/check-env.mjs"
 
 echo
-echo "Start the local server:"
-echo "  node apps/server/src/index.js"
+echo "Start the web app and server for phone testing:"
+echo "  npm run dev:mobile"
+echo
+echo "Or start only the local server:"
+echo "  npm run server:dev"
 echo
 echo "Health check:"
 echo "  http://127.0.0.1:8787/health"

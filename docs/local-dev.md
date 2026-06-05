@@ -8,10 +8,10 @@ The web uploader accepts TXT, Markdown, and EPUB files.
 You need Node.js. Then run:
 
 ```bash
-bash scripts/quickstart.sh
+npm run quickstart
 ```
 
-The script creates `.env` with:
+The script installs missing dependencies, then creates `.env` with:
 
 - `PORT`: where the server runs.
 - `LUMINA_CONNECTOR_TOKEN`: the connector key.
@@ -21,8 +21,18 @@ The token is like the key to your reading room. Do not put `.env` in GitHub, scr
 
 ## 2. Start The Server
 
+For the full web app, run:
+
 ```bash
-node apps/server/src/index.js
+npm run dev:mobile
+```
+
+Then open the printed URL in your browser or phone.
+
+For API-only testing, run:
+
+```bash
+npm run server:dev
 ```
 
 Open this in a browser:
