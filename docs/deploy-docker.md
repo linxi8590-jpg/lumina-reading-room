@@ -35,11 +35,11 @@ If you are not logged in as `root`, replace `bash` with `sudo bash`.
 The installer will:
 
 - Install Docker and Docker Compose.
-- Create a 2GB swap file on very small VPS instances if there is no swap yet.
+- Try to create a 2GB swap file on very small VPS instances if there is no swap yet.
 - Clone or update the Lumina repository under `/opt/lumina-reading-room/repo`.
 - Generate a connector token if one does not already exist.
 - Store books and notes under `/opt/lumina-reading-room/data`.
-- Add a small swap file on very low-memory VPS images before building.
+- Continue without swap if the provider image does not allow it.
 - Build and start the Lumina container.
 - Start Caddy on ports `80` and `443` for automatic HTTPS.
 

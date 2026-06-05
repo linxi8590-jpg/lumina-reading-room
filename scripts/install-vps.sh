@@ -26,6 +26,10 @@ die() {
   exit 1
 }
 
+warn() {
+  echo "Warning: $*" >&2
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --domain)
@@ -106,6 +110,10 @@ validate_domain() {
 confirm_continue() {
   local question="$1"
   if [[ "$YES" -eq 1 ]]; then return 0; fi
+  if [[ ! -t 0 ]]; then
+    warn "No interactive stdin available; continuing. Use --strict-dns if you want DNS warnings to fail."
+    return 0
+  fi
   read -r -p "$question [y/N] " answer
   [[ "$answer" == "y" || "$answer" == "Y" || "$answer" == "yes" || "$answer" == "YES" ]]
 }
@@ -130,24 +138,58 @@ install_packages() {
 
 ensure_swap_for_small_vps() {
   local mem_mb
-  mem_mb="$(awk '/MemTotal/ {print int($2 / 1024)}' /proc/meminfo)"
+  mem_mb="$(awk '/MemTotal/ {print int($2 / 1024)}' /proc/meminfo 2>/dev/null || echo 0)"
   if [[ "$mem_mb" -ge 1800 ]]; then
     return
   fi
-  if swapon --show | grep -q .; then
+  if swapon --show 2>/dev/null | grep -q .; then
     return
   fi
 
-  echo "Small VPS detected (${mem_mb}MB RAM). Creating 2GB swap for Docker builds."
-  if command -v fallocate >/dev/null 2>&1; then
-    fallocate -l 2G /swapfile
-  else
-    dd if=/dev/zero of=/swapfile bs=1M count=2048 status=progress
+  echo "Small VPS detected (${mem_mb}MB RAM). Trying to create 2GB swap for Docker builds."
+
+  if [[ -e /swapfile ]]; then
+    if swapon --show=NAME --noheadings 2>/dev/null | awk '{print $1}' | grep -qx '/swapfile'; then
+      return
+    fi
+    if ! rm -f /swapfile; then
+      warn "Cannot remove existing /swapfile; continuing without adding swap."
+      return 0
+    fi
   fi
-  chmod 600 /swapfile
-  mkswap /swapfile
-  swapon /swapfile
-  if ! grep -q '^/swapfile ' /etc/fstab; then
+
+  local created=0
+  if command -v fallocate >/dev/null 2>&1; then
+    if fallocate -l 2G /swapfile 2>/dev/null; then
+      created=1
+    else
+      warn "fallocate failed; falling back to dd."
+    fi
+  fi
+  if [[ "$created" -eq 0 ]]; then
+    if ! dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none; then
+      warn "Could not create /swapfile; continuing without swap. Docker build may need a larger VPS."
+      rm -f /swapfile 2>/dev/null || true
+      return 0
+    fi
+  fi
+
+  if ! chmod 600 /swapfile; then
+    warn "Could not set permissions on /swapfile; continuing without swap."
+    rm -f /swapfile 2>/dev/null || true
+    return 0
+  fi
+  if ! mkswap /swapfile >/dev/null 2>&1; then
+    warn "mkswap failed; continuing without swap. Docker build may need a larger VPS."
+    rm -f /swapfile 2>/dev/null || true
+    return 0
+  fi
+  if ! swapon /swapfile; then
+    warn "swapon failed; continuing without swap. Docker build may need a larger VPS."
+    rm -f /swapfile 2>/dev/null || true
+    return 0
+  fi
+  if ! grep -q '^/swapfile ' /etc/fstab 2>/dev/null; then
     echo '/swapfile none swap sw 0 0' >> /etc/fstab
   fi
 }

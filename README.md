@@ -35,7 +35,7 @@ curl -fsSL https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/m
 脚本会自动完成：
 
 - 安装 Docker 和 Docker Compose。
-- 小内存服务器自动创建 2GB swap，避免构建时内存不够。
+- 小内存服务器会尝试创建 2GB swap，创建不了也会继续安装。
 - 拉取 Lumina 代码。
 - 生成连接器令牌。
 - 把书、笔记和进度存在 `/opt/lumina-reading-room/data`。
