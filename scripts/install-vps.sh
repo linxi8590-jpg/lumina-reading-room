@@ -263,7 +263,7 @@ compose_cmd() {
 check_dns() {
   local server_ip dns_ips
   server_ip="$(curl -4fsS --max-time 8 https://api.ipify.org 2>/dev/null || true)"
-  dns_ips="$(getent ahostsv4 "$DOMAIN" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  dns_ips="$(getent ahostsv4 "$DOMAIN" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//' || true)"
 
   if [[ -z "$dns_ips" ]]; then
     echo "DNS warning: $DOMAIN does not resolve yet."
