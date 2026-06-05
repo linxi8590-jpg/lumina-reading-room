@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_URL="https://github.com/linxi8590-jpg/lumina-reading-room.git"
 BRANCH="main"
 INSTALL_DIR="/opt/lumina-reading-room"
-INSTALLER_REVISION="2026-06-06.trap-debug"
+INSTALLER_REVISION="2026-06-06.compose-v2-binary"
 DOMAIN=""
 YES=0
 STRICT_DNS=0
@@ -119,6 +119,23 @@ confirm_continue() {
   [[ "$answer" == "y" || "$answer" == "Y" || "$answer" == "yes" || "$answer" == "YES" ]]
 }
 
+install_compose_v2_binary() {
+  local arch
+  arch="$(uname -m)"
+  case "$arch" in
+    x86_64) arch="x86_64" ;;
+    aarch64|arm64) arch="aarch64" ;;
+    *) die "Unsupported architecture for Docker Compose v2 binary: $arch" ;;
+  esac
+  local plugin_dir="/usr/local/lib/docker/cli-plugins"
+  mkdir -p "$plugin_dir"
+  curl -fsSL -o "$plugin_dir/docker-compose" \
+    "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$arch"
+  chmod +x "$plugin_dir/docker-compose"
+  docker compose version </dev/null >/dev/null 2>&1 \
+    || die "Docker Compose v2 binary install failed; 'docker compose version' still fails."
+}
+
 install_packages() {
   if ! command -v apt-get >/dev/null 2>&1; then
     die "This installer currently supports Ubuntu/Debian VPS images with apt-get."
@@ -129,13 +146,20 @@ install_packages() {
   apt-get update </dev/null
   apt-get install -y ca-certificates curl git openssl docker.io util-linux </dev/null
 
+  # Remove any pre-existing Python docker-compose v1 — it crashes on `up --build`
+  # with `merge_volume_bindings` against modern docker daemons.
+  if dpkg -s docker-compose >/dev/null 2>&1; then
+    echo "Removing legacy docker-compose v1 (Python)..."
+    apt-get remove -y docker-compose </dev/null || true
+  fi
+
   if ! docker compose version </dev/null >/dev/null 2>&1; then
     if apt-cache show docker-compose-plugin </dev/null >/dev/null 2>&1; then
-      echo "Installing Docker Compose plugin..."
+      echo "Installing Docker Compose plugin via apt..."
       apt-get install -y docker-compose-plugin </dev/null
     else
-      echo "docker-compose-plugin is not available in this apt repo; installing docker-compose fallback."
-      apt-get install -y docker-compose </dev/null
+      echo "docker-compose-plugin not in apt; installing Docker Compose v2 binary from GitHub..."
+      install_compose_v2_binary
     fi
   fi
 
