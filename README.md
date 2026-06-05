@@ -89,7 +89,22 @@ docs/deployment-options.md
 docs/deploy-supabase.md
 ```
 
-### 方式 B：服务器 / Docker 模式
+### 方式 B：Cloudflare Tunnel 临时 HTTPS
+
+适合不想买域名，但想让 ChatGPT web、Claude.ai 等远程 AI 客户端临时连进来试用的人。
+
+你需要：
+
+- 本机 Lumina server。
+- `cloudflared`。
+
+看这里：
+
+```text
+docs/deploy-cloudflare-tunnel.md
+```
+
+### 方式 C：服务器 / Docker 模式
 
 适合有 VPS、NAS、家用服务器或 Coolify/Railway 的人。
 

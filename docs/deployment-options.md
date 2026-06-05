@@ -70,6 +70,12 @@ This is the lowest-friction way to prove that a remote MCP client can reach
 Lumina. The tradeoff is that the URL is temporary. When the tunnel stops, the
 URL may change and the AI client configuration must be updated.
 
+Start here:
+
+```text
+docs/deploy-cloudflare-tunnel.md
+```
+
 ## Option C: Long-Term Self Hosting
 
 Use this when you want a stable reading room that you can keep using.
@@ -104,4 +110,3 @@ They need a public URL that can route back to your Lumina server.
 
 For local-only reading, do not worry about this. For AI co-reading from a remote
 client, plan for HTTPS.
-
