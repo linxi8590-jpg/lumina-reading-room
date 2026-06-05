@@ -13,7 +13,7 @@ usage() {
   echo "Usage: bash scripts/install-vps.sh --domain lumina.example.com [--yes]"
   echo
   echo "Options:"
-  echo "  --domain DOMAIN       Domain or subdomain that points to this server"
+  echo "  --domain DOMAIN       Dedicated domain or subdomain that points to this server"
   echo "  --install-dir DIR     Install directory, default: /opt/lumina-reading-room"
   echo "  --branch BRANCH       Git branch, default: main"
   echo "  --repo-url URL        Git repository URL"
@@ -91,9 +91,9 @@ normalize_domain() {
 prompt_domain() {
   if [[ -n "$DOMAIN" ]]; then return; fi
   if [[ ! -t 0 ]]; then
-    die "Pass --domain when using the curl installer, for example: bash -s -- --domain lumina.example.com"
+    die "Pass --domain when using the installer, for example: bash /tmp/lumina-install-vps.sh --domain lumina.example.com"
   fi
-  read -r -p "Domain or subdomain for Lumina, for example lumina.example.com: " DOMAIN
+  read -r -p "Dedicated domain or subdomain for Lumina, for example lumina.example.com: " DOMAIN
 }
 
 validate_domain() {

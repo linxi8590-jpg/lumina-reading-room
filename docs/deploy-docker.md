@@ -9,9 +9,13 @@ public HTTPS URL. For that, use a small VPS, a domain, Docker, and Caddy.
 
 - A VPS running Ubuntu or Debian.
 - Root SSH access.
-- A domain or subdomain, for example `lumina.example.com`.
-- A DNS `A` record pointing that domain to the VPS public IP.
+- A dedicated domain or subdomain, for example `lumina.example.com`.
+- A DNS `A` record pointing that domain or subdomain to the VPS public IP.
 - Ports `80` and `443` open on the VPS.
+
+If your root domain already runs other services, do not use the root domain for
+Lumina. Create a new subdomain such as `lumina.example.com`. That single DNS
+record will not affect the root domain or other subdomains.
 
 The server does not need to be large for one person. A small instance is enough
 for books, notes, and one user's AI connector traffic.
@@ -24,13 +28,24 @@ SSH into the VPS:
 ssh root@your-server-ip
 ```
 
-Run the installer. Replace the domain with your real domain:
+Run the installer. Replace the domain with your real full domain or subdomain:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh | bash -s -- --domain lumina.example.com
+curl -fsSL -H 'Cache-Control: no-cache' \
+  "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" \
+  -o /tmp/lumina-install-vps.sh
+grep 'Installer revision' /tmp/lumina-install-vps.sh
+bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
 ```
 
-If you are not logged in as `root`, replace `bash` with `sudo bash`.
+If you are not logged in as `root`, replace the last line with:
+
+```bash
+sudo bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
+```
+
+The `grep` line prints the installer revision so you can confirm that the VPS is
+running the current installer rather than an old cached copy.
 
 The installer will:
 
@@ -64,8 +79,13 @@ Caddy cannot issue an HTTPS certificate yet.
 Create a DNS record like this:
 
 ```text
-lumina.example.com  A  your.server.ip.address
+Type: A
+Name: lumina
+Value: your.server.ip.address
 ```
+
+Then visit `https://lumina.example.com`. The installer `--domain` value must be
+the same full subdomain, not just `example.com`.
 
 If you use a CDN or proxy in front of the server, the DNS IP may not match the
 VPS IP directly. That can be intentional, but the proxy must still forward
@@ -76,11 +96,19 @@ HTTP and HTTPS traffic to this VPS.
 Run the same command again:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh | bash -s -- --domain lumina.example.com
+curl -fsSL -H 'Cache-Control: no-cache' \
+  "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" \
+  -o /tmp/lumina-install-vps.sh
+grep 'Installer revision' /tmp/lumina-install-vps.sh
+bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
 ```
 
 The installer preserves the existing connector token and data directory, then
 updates the code and restarts the containers.
+
+If you accidentally installed with the root domain, rerun the command with the
+correct full subdomain. The installer updates the deployed domain in the Docker
+environment.
 
 ## Manual Docker Mode
 

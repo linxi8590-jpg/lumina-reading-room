@@ -14,6 +14,16 @@ Lumina 是一个自托管的 AI 共读书房。
 - 一个域名或子域名，例如 `lumina.example.com`。
 - 把这个域名的 `A` 记录指向服务器公网 IP。
 
+如果你的主域名已经在跑别的服务，不要把主域名填进 Lumina。给 Lumina 单独建一个子域名，例如 `lumina.example.com`：
+
+```text
+DNS record type: A
+Name: lumina
+Value: your-server-public-ip
+```
+
+保存后访问的是完整子域名 `https://lumina.example.com`，不是主域名 `https://example.com`。脚本里的 `--domain` 也要填完整子域名。
+
 服务器不需要很大。只给自己读书和连接 AI，用轻量 VPS 就够。
 
 ## 一键部署
@@ -27,10 +37,16 @@ ssh root@your-server-ip
 在服务器里运行，把域名换成你自己的：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh | bash -s -- --domain lumina.example.com
+curl -fsSL -H 'Cache-Control: no-cache' \
+  "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" \
+  -o /tmp/lumina-install-vps.sh
+grep 'Installer revision' /tmp/lumina-install-vps.sh
+bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
 ```
 
-如果你不是用 `root` 登录，把 `bash` 换成 `sudo bash`。
+如果你不是用 `root` 登录，最后一行换成 `sudo bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes`。
+
+`grep` 那一行会打印安装脚本版本，确认你拿到的是最新脚本，不是旧缓存。
 
 脚本会自动完成：
 
@@ -108,10 +124,16 @@ https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 再次 SSH 登录服务器，重新运行同一条安装命令即可：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh | bash -s -- --domain lumina.example.com
+curl -fsSL -H 'Cache-Control: no-cache' \
+  "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" \
+  -o /tmp/lumina-install-vps.sh
+grep 'Installer revision' /tmp/lumina-install-vps.sh
+bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
 ```
 
 脚本会保留原来的连接令牌和数据目录，只更新代码和容器。
+
+如果第一次把主域名填错了，改成正确的完整子域名后重新运行上面的命令即可，脚本会更新部署配置。
 
 ## 当前状态
 
