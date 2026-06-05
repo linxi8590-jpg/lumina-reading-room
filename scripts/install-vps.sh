@@ -169,7 +169,7 @@ ensure_swap_for_small_vps() {
     fi
   fi
   if [[ "$created" -eq 0 ]]; then
-    echo "  [1/4] allocating /swapfile (dd 2048 MB, may take 30–60s)..."
+    echo "  [1/4] allocating /swapfile (dd 2048 MB, may take 30-60s)..."
     if ! dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none; then
       warn "Could not create /swapfile; continuing without swap. Docker build may need a larger VPS."
       rm -f /swapfile 2>/dev/null || true
