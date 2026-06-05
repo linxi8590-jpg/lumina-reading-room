@@ -34,7 +34,7 @@ Run the installer. Replace the domain with your real full domain or subdomain:
 curl -fsSL -H 'Cache-Control: no-cache' \
   "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" \
   -o /tmp/lumina-install-vps.sh
-grep 'Installer revision' /tmp/lumina-install-vps.sh
+grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh
 bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
 ```
 
@@ -99,7 +99,7 @@ Run the same command again:
 curl -fsSL -H 'Cache-Control: no-cache' \
   "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" \
   -o /tmp/lumina-install-vps.sh
-grep 'Installer revision' /tmp/lumina-install-vps.sh
+grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh
 bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
 ```
 
