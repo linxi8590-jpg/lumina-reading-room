@@ -7,6 +7,7 @@
     "quickstart": "bash scripts/quickstart.sh",
     "server:dev": "node apps/server/src/index.js",
     "token": "node scripts/generate-token.mjs",
+    "connector:config": "node scripts/print-connector-config.mjs",
     "check:env": "node scripts/check-env.mjs",
     "smoke:local": "node scripts/smoke-local.mjs"
   },

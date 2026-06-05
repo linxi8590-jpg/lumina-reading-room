@@ -11,12 +11,20 @@
 如果你只是在本机浏览器里读书，可以使用 `http://127.0.0.1:8787`。
 如果你要让 ChatGPT web、Claude.ai 等远程 AI 客户端连接，必须使用公网可达的 HTTPS 地址。
 
-通常需要两项：
+支持自定义 header 的客户端通常需要两项。不同 AI 客户端的字段名会不同，但都来自这两个值：
 
 ```text
 Server URL: https://your-domain.example/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
+
+有些网页端连接器界面只让你填一个 URL。这时可以用带 token 的一行 URL：
+
+```text
+https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+```
+
+这个 URL 本身也等同于钥匙，不要公开截图。
 
 令牌像你书房的钥匙。谁拿到它，谁就能让 AI 读取你已经读过的内容。不要把它发到网上。
 
@@ -31,11 +39,99 @@ https://your-domain.example/mcp        [拷贝]
 连接器令牌
 [粘贴令牌到这里]                     [保存令牌]
 lrr_abcd1234••••••••••                [显示] [拷贝]
+Authorization: Bearer lrr_abcd...      [拷贝]
+https://.../mcp?token=lrr_abcd...      [拷贝]
 
 这是你书房的钥匙。不要发到网上。
 ```
 
-令牌保存后，输入框会清空，只留下遮罩预览。拷贝后，到你的 AI 客户端里填写这两项。不同客户端入口不一样，但本质都是填同一个 URL 和同一个 token。
+令牌保存后，输入框会清空，只留下遮罩预览。拷贝后，到你的 AI 客户端里填写这两项。
+
+## ChatGPT / OpenAI
+
+ChatGPT 的界面通常会让你填写远程 MCP server 地址和授权信息。OpenAI API 里的字段长这样：
+
+```json
+{
+  "type": "mcp",
+  "server_label": "lumina",
+  "server_description": "Lumina Reading Room connector. It reads only the reader-unlocked book context and notes.",
+  "server_url": "https://your-domain.example/mcp",
+  "authorization": "lrr_xxxxxxxxxxxxxxxxxxxxx",
+  "require_approval": "always"
+}
+```
+
+如果 ChatGPT 当前界面只给你表单，不需要粘 JSON，就填：
+
+```text
+MCP URL: https://your-domain.example/mcp
+Authorization token: lrr_xxxxxxxxxxxxxxxxxxxxx
+```
+
+如果界面只让你填一个远程 MCP URL，就填：
+
+```text
+https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+```
+
+## Claude.ai / Claude Desktop
+
+Claude.ai、Claude Desktop 和 Claude mobile 的远程 connector 是同一套账号级配置。添加 custom connector 时填：
+
+```text
+Connector name: Lumina
+Connector URL: https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+```
+
+Claude 的远程 connector 从 Anthropic 云端访问你的 server，所以 `localhost` 不可用。先用 Cloudflare Tunnel 或自己的域名拿到公网 HTTPS 地址。
+
+如果你是从 Claude Messages API 直连 MCP server，配置片段是：
+
+```json
+{
+  "mcp_servers": [
+    {
+      "type": "url",
+      "url": "https://your-domain.example/mcp",
+      "name": "lumina",
+      "authorization_token": "lrr_xxxxxxxxxxxxxxxxxxxxx"
+    }
+  ],
+  "tools": [{ "type": "mcp_toolset", "mcp_server_name": "lumina" }]
+}
+```
+
+## Claude Code / Codex
+
+Claude Code / SDK 的 HTTP MCP 配置通常把 token 放在 HTTP header：
+
+```bash
+claude mcp add --transport http lumina https://your-domain.example/mcp \
+  --header "Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx"
+```
+
+```json
+{
+  "mcpServers": {
+    "lumina": {
+      "type": "http",
+      "url": "https://your-domain.example/mcp",
+      "headers": {
+        "Authorization": "Bearer lrr_xxxxxxxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}
+```
+
+Codex 的用户级配置可以写成：
+
+```toml
+[mcp_servers.lumina]
+url = "https://your-domain.example/mcp"
+http_headers = { Authorization = "Bearer lrr_xxxxxxxxxxxxxxxxxxxxx" }
+```
 
 ## 连接是否正常
 

@@ -35,7 +35,13 @@ echo "Health check:"
 echo "  http://127.0.0.1:8787/health"
 echo
 echo "Connector settings:"
-echo "  Server URL: http://127.0.0.1:8787/mcp"
+echo "  MCP URL: http://127.0.0.1:8787/mcp"
 echo "  Authorization: Bearer $TOKEN"
+echo
+echo "Connector URL for ChatGPT/Claude web UI:"
+echo "  http://127.0.0.1:8787/mcp?token=$TOKEN"
+echo
+echo "Print copy-ready connector snippets:"
+echo "  npm run connector:config"
 echo
 echo "Keep this token private. It is the key to your reading room."

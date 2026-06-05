@@ -146,11 +146,23 @@ Connector Token: lrr_xxxxxxxxxxxxxxxxxxxxx
 https://your-domain.example/mcp
 ```
 
-在支持远程 MCP / ChatGPT Apps 的客户端里填写：
+在支持 header 的远程 MCP 客户端里填写：
 
 ```text
 Server URL: https://your-domain.example/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
+```
+
+如果客户端只让你填写一个远程 MCP URL，使用带 token 的连接器 URL：
+
+```text
+https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+```
+
+本地也可以直接打印每个客户端的配置：
+
+```bash
+npm run connector:config
 ```
 
 ## 项目结构

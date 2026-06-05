@@ -106,6 +106,20 @@ try {
   assert(!text.includes('Future paragraph must not be returned before unlock.'), 'progressed context leaked future paragraph');
   checks.push('waterline');
 
+  const connectorUrlContext = await api(baseUrl, null, `/mcp?token=${encodeURIComponent(token)}`, {
+    method: 'POST',
+    body: {
+      tool: 'get_unlocked_context',
+      arguments: { book_id: bookId },
+    },
+  });
+  assert(connectorUrlContext.status === 200, 'MCP connector URL token should authorize the request');
+  assert(
+    connectorUrlContext.body.result.text.includes('Second paragraph visible after progress.'),
+    'MCP connector URL token should return unlocked context',
+  );
+  checks.push('mcp_url_token');
+
   const note = await api(baseUrl, token, '/mcp', {
     method: 'POST',
     body: {
@@ -273,12 +287,16 @@ try {
 }
 
 async function api(baseUrl, token, pathname, options = {}) {
+  const headers = {
+    ...(options.body ? { 'content-type': 'application/json' } : {}),
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${baseUrl}${pathname}`, {
     method: options.method || 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(options.body ? { 'content-type': 'application/json' } : {}),
-    },
+    headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
   const raw = await res.text();

@@ -109,6 +109,7 @@ User-facing connection string:
 ```text
 Server URL: https://your-domain.example/mcp
 Authorization: Bearer <connector-token>
+Web connector URL: https://your-domain.example/mcp?token=<connector-token>
 ```
 
 The token is scoped to the user's own library.

@@ -121,7 +121,11 @@ function sendJson(res, status, body) {
 }
 
 function isAuthorized(req) {
-  return Boolean(connectorToken) && req.headers.authorization === `Bearer ${connectorToken}`;
+  if (!connectorToken) return false;
+  if (req.headers.authorization === `Bearer ${connectorToken}`) return true;
+
+  const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+  return url.searchParams.get('token') === connectorToken;
 }
 
 async function readJsonBody(req) {
