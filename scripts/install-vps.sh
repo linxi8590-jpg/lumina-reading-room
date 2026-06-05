@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_URL="https://github.com/linxi8590-jpg/lumina-reading-room.git"
 BRANCH="main"
 INSTALL_DIR="/opt/lumina-reading-room"
+INSTALLER_REVISION="2026-06-06.dns-checkpoint"
 DOMAIN=""
 YES=0
 STRICT_DNS=0
@@ -376,22 +377,42 @@ main() {
     echo "Logging full installer output to $log_file"
   fi
 
+  echo "Installer revision: $INSTALLER_REVISION"
   echo "Installing Lumina for domain: $DOMAIN"
   echo "Install directory: $INSTALL_DIR"
   echo
 
+  echo "Step: install packages"
   install_packages
-  ensure_swap_for_small_vps
-  check_dns
-  sync_repo
-  write_env
-  start_lumina
+  echo "Step complete: install packages"
 
+  echo "Step: ensure swap"
+  ensure_swap_for_small_vps
+  echo "Step complete: ensure swap"
+
+  echo "Step: check DNS"
+  check_dns
+  echo "Step complete: check DNS"
+
+  echo "Step: sync repository"
+  sync_repo
+  echo "Step complete: sync repository"
+
+  echo "Step: write environment"
+  write_env
+  echo "Step complete: write environment"
+
+  echo "Step: start Lumina containers"
+  start_lumina
+  echo "Step complete: start Lumina containers"
+
+  echo "Step: wait for local health check"
   if ! wait_for_health; then
     echo "Lumina containers started, but local health check did not become ready."
     echo "Run: cd $INSTALL_DIR/repo/deploy/docker && docker compose logs"
     exit 1
   fi
+  echo "Step complete: wait for local health check"
 
   print_summary
 }
