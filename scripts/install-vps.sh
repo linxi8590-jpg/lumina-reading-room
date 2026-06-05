@@ -371,6 +371,7 @@ main() {
 
   local log_file="/var/log/lumina-install.log"
   if : >> "$log_file" 2>/dev/null; then
+    chmod 600 "$log_file" 2>/dev/null || true
     exec > >(tee -a "$log_file") 2>&1
     echo "Logging full installer output to $log_file"
   fi
