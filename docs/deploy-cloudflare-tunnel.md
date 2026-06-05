@@ -1,7 +1,7 @@
 # Deploy With Cloudflare Tunnel
 
-Cloudflare Tunnel is the fastest way to test Lumina with a remote AI client
-without buying a domain.
+Cloudflare Tunnel is a developer testing path for Lumina. Use it when you want
+to check a remote AI client before setting up a real VPS domain.
 
 It gives your local Lumina server a temporary HTTPS URL such as:
 
@@ -10,7 +10,7 @@ https://example-name.trycloudflare.com
 ```
 
 Use this path when you want to test ChatGPT Apps, Claude.ai, or another remote
-MCP client before setting up a real domain.
+MCP client for a short time.
 
 ## What You Need
 
@@ -18,7 +18,7 @@ MCP client before setting up a real domain.
 - `cloudflared` installed.
 - Your connector token from `.env`.
 
-You do not need:
+For this temporary test, you do not need:
 
 - A domain.
 - A VPS.
@@ -124,7 +124,8 @@ Quick Tunnel is for testing.
 - The `trycloudflare.com` URL can change when you restart the tunnel.
 - If the URL changes, update the AI client configuration.
 - If your computer sleeps or disconnects, the AI client cannot reach Lumina.
-- Long-term use should move to `docs/deploy-docker.md` or a named Cloudflare Tunnel with your own domain.
+- Long-term use should move to `docs/deploy-docker.md`.
+- A stable named Cloudflare Tunnel still needs your own domain or subdomain.
 
 ## Why This Works
 
@@ -132,4 +133,3 @@ Remote AI clients cannot access your `localhost`. `cloudflared` creates an
 outbound connection from your machine to Cloudflare, and Cloudflare gives you a
 temporary public HTTPS URL. Requests to that URL are forwarded back to your
 local Lumina server.
-

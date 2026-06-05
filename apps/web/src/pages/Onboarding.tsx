@@ -3,29 +3,29 @@ import { isConfigured } from '../lib/api'
 
 const STEPS = [
   {
-    title: '先放书',
-    body: '上传 TXT、Markdown 或 EPUB，Lumina 会按标题和章节切成可阅读的段落。',
+    title: '保存钥匙',
+    body: '把安装脚本打印的连接器令牌粘进来。网页和 AI 都靠它进入你的书房。',
+    href: '/connector',
+    action: '保存令牌',
+  },
+  {
+    title: '上传一本书',
+    body: '上传 TXT、Markdown 或 EPUB，Lumina 会按章节切成可阅读的段落。',
     href: '/upload',
     action: '上传一本书',
   },
   {
-    title: '再接 AI',
-    body: '把 Lumina 地址和连接器令牌贴到你常用的 AI 客户端里。',
+    title: '连接 AI',
+    body: '复制当前页面生成的 ChatGPT 或 Claude 配置，让 AI 只读你已经读到的位置。',
     href: '/connector',
     action: '连接 AI',
-  },
-  {
-    title: '自己管数据',
-    body: '选择本地 / Docker 或 Supabase，书、笔记和进度都存在你选的地方。',
-    href: '/settings',
-    action: '选择存储',
   },
 ]
 
 export default function Onboarding() {
   const configured = isConfigured()
   const primaryHref = configured ? '/shelf' : '/connector'
-  const primaryLabel = configured ? '进入书架' : '先连接 AI'
+  const primaryLabel = configured ? '进入书架' : '保存书房钥匙'
 
   return (
     <main className="min-h-screen bg-paper-50 text-ink-900 px-6 py-12">
@@ -34,7 +34,7 @@ export default function Onboarding() {
           <p className="text-sm text-sky-700 mb-2">Lumina Reading Room</p>
           <h1 className="text-4xl font-serif mb-4">星灯书房</h1>
           <p className="reading max-w-2xl text-ink-700">
-            AI 只读你已经读过的页。你翻到哪里，它就跟到哪里。
+            这是你自己的 AI 共读书房。上传书，边读边写笔记；AI 只读你已经读过的内容。
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -47,9 +47,9 @@ export default function Onboarding() {
             <Link
               to="/settings"
               className="inline-block px-4 py-2 border border-ink-500/30 rounded hover:bg-paper-100 transition-colors"
-              aria-label="打开存储设置"
+              aria-label="打开诊断状态"
             >
-              存储设置
+              诊断状态
             </Link>
           </div>
         </header>
@@ -89,7 +89,7 @@ export default function Onboarding() {
           <h2 className="font-medium mb-2">共读边界</h2>
           <p className="text-sm text-ink-700">
             连接器只把已解锁内容交给 AI。未读章节不会出现在当前页、笔记接口或
-            MCP 工具返回里。
+            MCP 工具返回里。书、笔记、进度和令牌都在你自己的服务器上。
           </p>
           <Link
             to="/shelf"

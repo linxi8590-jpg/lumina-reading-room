@@ -8,8 +8,8 @@
 
 ## 连接器需要填写什么
 
-如果你只是在本机浏览器里读书，可以使用 `http://127.0.0.1:8787`。
-如果你要让 ChatGPT web、Claude.ai 等远程 AI 客户端连接，必须使用公网可达的 HTTPS 地址。
+ChatGPT web、Claude.ai 等远程 AI 客户端必须使用公网可达的 HTTPS 地址。
+正式使用时，这通常是你自己的 Lumina 域名。
 
 支持自定义 header 的客户端通常需要两项。不同 AI 客户端的字段名会不同，但都来自这两个值：
 
@@ -84,7 +84,7 @@ Connector name: Lumina
 Connector URL: https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-Claude 的远程 connector 从 Anthropic 云端访问你的 server，所以 `localhost` 不可用。先用 Cloudflare Tunnel 或自己的域名拿到公网 HTTPS 地址。
+Claude 的远程 connector 从 Anthropic 云端访问你的 server，所以 `localhost` 不可用。正式使用请用自己的公网 HTTPS 域名；Cloudflare Tunnel 只适合临时测试。
 
 如果你是从 Claude Messages API 直连 MCP server，配置片段是：
 

@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+!.env.example
+.lumina
+.lumina-test
+.playwright-cli
+coverage
+dist
+node_modules
+output
+apps/*/dist
+apps/*/node_modules
+deploy/docker/.env
+Dockerfile
+*.log
+.DS_Store

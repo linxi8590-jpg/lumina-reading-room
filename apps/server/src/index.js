@@ -15,6 +15,7 @@ await loadDotEnv();
 const port = Number(process.env.PORT || 8787);
 const dataDir = path.resolve(rootDir, process.env.LUMINA_DATA_DIR || '.lumina');
 const dataFile = path.join(dataDir, 'data.json');
+const webDistDir = path.resolve(rootDir, process.env.LUMINA_WEB_DIST || 'apps/web/dist');
 const connectorToken = process.env.LUMINA_CONNECTOR_TOKEN || '';
 const maxJsonBodyBytes = Number(process.env.LUMINA_MAX_JSON_BODY_BYTES || 50 * 1024 * 1024);
 
@@ -58,6 +59,10 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === '/mcp') {
       await handleMcp(req, res);
+      return;
+    }
+
+    if (await serveStaticWeb(req, res, url)) {
       return;
     }
 
@@ -118,6 +123,90 @@ function sendJson(res, status, body) {
     return;
   }
   res.end(JSON.stringify(body, null, 2));
+}
+
+async function serveStaticWeb(req, res, url) {
+  if (!['GET', 'HEAD'].includes(req.method || '')) return false;
+
+  const pathname = safeDecodePath(url.pathname);
+  if (!pathname) {
+    sendJson(res, 400, { error: 'bad_path' });
+    return true;
+  }
+  if (pathname.startsWith('/api/') || pathname === '/mcp' || pathname === '/health') return false;
+
+  const cleanPath = pathname === '/' ? '/index.html' : pathname;
+  let filePath = path.resolve(webDistDir, `.${cleanPath}`);
+  if (!isPathInside(filePath, webDistDir)) {
+    sendJson(res, 403, { error: 'forbidden' });
+    return true;
+  }
+
+  let stat = await statFile(filePath);
+  if (!stat || stat.isDirectory()) {
+    if (path.extname(cleanPath)) return false;
+    filePath = path.join(webDistDir, 'index.html');
+    stat = await statFile(filePath);
+  }
+
+  if (!stat || !stat.isFile()) return false;
+
+  res.writeHead(200, {
+    'content-type': contentTypeFor(filePath),
+    'content-length': stat.size,
+    'cache-control': filePath.endsWith('index.html')
+      ? 'no-cache'
+      : 'public, max-age=31536000, immutable'
+  });
+  if (req.method === 'HEAD') {
+    res.end();
+    return true;
+  }
+  res.end(await fs.readFile(filePath));
+  return true;
+}
+
+function safeDecodePath(pathname) {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return null;
+  }
+}
+
+async function statFile(filePath) {
+  try {
+    return await fs.stat(filePath);
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+    throw error;
+  }
+}
+
+function isPathInside(filePath, parentDir) {
+  const relative = path.relative(parentDir, filePath);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function contentTypeFor(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return {
+    '.css': 'text/css; charset=utf-8',
+    '.gif': 'image/gif',
+    '.html': 'text/html; charset=utf-8',
+    '.ico': 'image/x-icon',
+    '.jpeg': 'image/jpeg',
+    '.jpg': 'image/jpeg',
+    '.js': 'text/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.map': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml',
+    '.txt': 'text/plain; charset=utf-8',
+    '.webp': 'image/webp',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2'
+  }[ext] || 'application/octet-stream';
 }
 
 function isAuthorized(req) {

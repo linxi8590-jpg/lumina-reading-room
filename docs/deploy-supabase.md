@@ -1,6 +1,18 @@
 # Deploy with Supabase
 
-Supabase 模式适合不想维护服务器的人。
+Supabase 模式不是当前推荐主路径。Lumina 的推荐路径是：
+
+```text
+VPS + 自己的域名 + Docker + Caddy
+```
+
+看这里：
+
+```text
+docs/deploy-docker.md
+```
+
+这份文档保留给想研究 Supabase 存储拆分的人。注意：只部署静态网页不够，远程 AI 客户端仍然需要一个公网 HTTPS 连接器服务。
 
 你需要准备：
 

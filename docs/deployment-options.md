@@ -1,99 +1,14 @@
 # Deployment Options
 
-Lumina can run in three different ways. Pick the smallest path that matches
-what you want to test.
+Lumina's main value is AI co-reading through a connector. That means the
+reading room should have a stable public HTTPS URL.
 
-## Quick Choice
+## Recommended Path
 
-| Goal | Needs domain? | Good for |
-| --- | --- | --- |
-| Read locally in the browser | No | Trying Lumina on your own computer |
-| Let a remote AI client reach your local server | No owned domain, but needs a temporary HTTPS URL | Testing ChatGPT Apps, Claude.ai, or other remote MCP clients |
-| Run Lumina long term for yourself | Yes, or a hosted HTTPS subdomain | Daily use and stable AI connector setup |
-
-## Option A: Local Reading Only
-
-Use this when you just want to upload a book, read it, and write notes in the
-web app.
-
-You need:
-
-- Node.js.
-- This repository.
-
-You do not need:
-
-- A domain.
-- A VPS.
-- HTTPS.
-
-Start here:
+Use:
 
 ```text
-docs/local-dev.md
-```
-
-This mode can fully test the web reader, uploads, notes, export, and reading
-waterline. It is not enough for ChatGPT web or Claude.ai to connect from the
-internet, because those services cannot reach your `localhost`.
-
-## Option B: Temporary HTTPS Tunnel
-
-Use this when you want to test a remote AI client without buying a domain or
-opening router/firewall ports.
-
-You need:
-
-- The local Lumina server running on your machine.
-- A tunneling tool such as Cloudflare Tunnel.
-
-Example:
-
-```bash
-node apps/server/src/index.js
-cloudflared tunnel --url http://localhost:8787
-```
-
-Cloudflare will print a temporary HTTPS URL like:
-
-```text
-https://example-name.trycloudflare.com
-```
-
-Use this connector URL in the AI client:
-
-```text
-https://example-name.trycloudflare.com/mcp
-```
-
-This is the lowest-friction way to prove that a remote MCP client can reach
-Lumina. The tradeoff is that the URL is temporary. When the tunnel stops, the
-URL may change and the AI client configuration must be updated.
-
-Start here:
-
-```text
-docs/deploy-cloudflare-tunnel.md
-```
-
-## Option C: Long-Term Self Hosting
-
-Use this when you want a stable reading room that you can keep using.
-
-You need one of these:
-
-- A VPS, NAS, home server, or any machine that can run Docker.
-- A PaaS service such as Railway, Fly.io, Render, Coolify, or similar.
-
-You also need an HTTPS address. This can be:
-
-- Your own domain, for example `lumina.example.com`.
-- A platform-provided HTTPS subdomain.
-
-The stable connector URL will be:
-
-```text
-https://lumina.example.com/mcp
+VPS + your own domain + Docker + Caddy HTTPS
 ```
 
 Start here:
@@ -102,11 +17,73 @@ Start here:
 docs/deploy-docker.md
 ```
 
-## Why Remote AI Clients Need HTTPS
+This gives you:
 
-Localhost belongs to the machine where it is opened. Your browser can open
-`http://localhost:5173`, but ChatGPT web and Claude.ai run outside your machine.
-They need a public URL that can route back to your Lumina server.
+- A phone-friendly web reading room at `https://your-domain.example`.
+- A stable connector endpoint at `https://your-domain.example/mcp`.
+- User-owned books, notes, progress, and token storage.
+- Automatic HTTPS through Caddy.
 
-For local-only reading, do not worry about this. For AI co-reading from a remote
-client, plan for HTTPS.
+## Quick Choice
+
+| Goal | Path | Status |
+| --- | --- | --- |
+| Use Lumina as intended with ChatGPT or Claude | VPS + domain + Caddy | Recommended |
+| Develop or debug the web app locally | Local Node/Vite server | Developer-only |
+| Temporarily test remote MCP reachability | Cloudflare Quick Tunnel | Temporary only |
+| Avoid a server entirely | Static hosting only | Not enough for remote AI connectors |
+
+## Why A Server Is The Main Path
+
+ChatGPT web, Claude.ai, and similar remote AI clients run outside your laptop
+and phone. They cannot reach `localhost` or a private Wi-Fi address. They need a
+public HTTPS endpoint.
+
+The connector is also the security boundary. It checks the token and only
+returns reading waterline-safe content to the AI client.
+
+## Local Development
+
+Local mode is still useful for developers:
+
+```bash
+npm run quickstart
+npm run dev:mobile
+```
+
+Read:
+
+```text
+docs/local-dev.md
+```
+
+Do not treat this as the product's main user path. A local-only reader does not
+show Lumina's core value.
+
+## Cloudflare Tunnel
+
+Cloudflare Quick Tunnel can expose a local server through a temporary HTTPS URL:
+
+```bash
+cloudflared tunnel --url http://localhost:8787
+```
+
+This is useful for quick MCP experiments. It is not the recommended production
+path because the URL is temporary and can change.
+
+Read:
+
+```text
+docs/deploy-cloudflare-tunnel.md
+```
+
+## Static Hosting Alone Is Not Enough
+
+The web app can be served as static files, but remote AI connectors need a
+server endpoint that can:
+
+- Validate the connector token.
+- Read and write books, notes, and progress.
+- Enforce the reading waterline before returning context to AI.
+
+So static hosting alone is not a complete Lumina deployment.

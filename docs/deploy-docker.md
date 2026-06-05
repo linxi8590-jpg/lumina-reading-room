@@ -1,186 +1,187 @@
-# Deploy With Docker
+# Deploy On A VPS
 
-Docker mode is the long-term self-hosting path. Use it when you have a VPS,
-NAS, home server, Coolify machine, or any server that can run Docker.
+This is the recommended path for real use.
 
-If you only want to try Lumina locally, read:
-
-```text
-docs/local-dev.md
-```
-
-If you are not sure whether you need a domain, read:
-
-```text
-docs/deployment-options.md
-```
+Lumina is useful when an AI client can reach your reading room through a stable
+public HTTPS URL. For that, use a small VPS, a domain, Docker, and Caddy.
 
 ## What You Need
 
-For a stable public AI connector, you need:
-
-- A server that can run Docker and Docker Compose.
+- A VPS running Ubuntu or Debian.
+- Root SSH access.
 - A domain or subdomain, for example `lumina.example.com`.
-- DNS pointing that domain to the server.
-- Ports `80` and `443` open on the server.
+- A DNS `A` record pointing that domain to the VPS public IP.
+- Ports `80` and `443` open on the VPS.
 
-The included Docker setup runs:
+The server does not need to be large for one person. A small instance is enough
+for books, notes, and one user's AI connector traffic.
 
-- `postgres`: stores books, reading progress, and notes.
-- `server`: serves the API and `/mcp` connector.
-- `caddy`: terminates HTTPS and reverse-proxies to the server.
+## One-Command Install
 
-## 1. Copy The Environment File
-
-From the repository root:
+SSH into the VPS:
 
 ```bash
+ssh root@your-server-ip
+```
+
+Run the installer. Replace the domain with your real domain:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh | bash -s -- --domain lumina.example.com
+```
+
+If you are not logged in as `root`, replace `bash` with `sudo bash`.
+
+The installer will:
+
+- Install Docker and Docker Compose.
+- Create a 2GB swap file on very small VPS instances if there is no swap yet.
+- Clone or update the Lumina repository under `/opt/lumina-reading-room/repo`.
+- Generate a connector token if one does not already exist.
+- Store books and notes under `/opt/lumina-reading-room/data`.
+- Add a small swap file on very low-memory VPS images before building.
+- Build and start the Lumina container.
+- Start Caddy on ports `80` and `443` for automatic HTTPS.
+
+When it finishes, it prints:
+
+```text
+Open the reading room:
+  https://lumina.example.com
+
+MCP connector:
+  Server URL: https://lumina.example.com/mcp
+  Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
+```
+
+Open `https://lumina.example.com` in a phone or desktop browser.
+
+## DNS Check
+
+The installer checks whether your domain resolves. If the domain is not ready,
+Caddy cannot issue an HTTPS certificate yet.
+
+Create a DNS record like this:
+
+```text
+lumina.example.com  A  your.server.ip.address
+```
+
+If you use a CDN or proxy in front of the server, the DNS IP may not match the
+VPS IP directly. That can be intentional, but the proxy must still forward
+HTTP and HTTPS traffic to this VPS.
+
+## Update Later
+
+Run the same command again:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh | bash -s -- --domain lumina.example.com
+```
+
+The installer preserves the existing connector token and data directory, then
+updates the code and restarts the containers.
+
+## Manual Docker Mode
+
+If you do not want to use the installer:
+
+```bash
+git clone https://github.com/linxi8590-jpg/lumina-reading-room.git
+cd lumina-reading-room
 cp deploy/docker/.env.example deploy/docker/.env
 ```
 
 Edit `deploy/docker/.env`:
 
 ```text
-POSTGRES_PASSWORD=change_this_password
-LUMINA_CONNECTOR_TOKEN=
 LUMINA_DOMAIN=lumina.example.com
+LUMINA_CONNECTOR_TOKEN=lrr_xxxxxxxxxxxxxxxxxxxxx
+LUMINA_HOST_DATA_DIR=/opt/lumina-reading-room/data
+LUMINA_MAX_JSON_BODY_BYTES=52428800
 ```
 
-Generate a connector token:
+Generate a token if needed:
 
 ```bash
 node scripts/generate-token.mjs
 ```
 
-Paste the generated token into `LUMINA_CONNECTOR_TOKEN`.
-
-Set `LUMINA_DOMAIN` to your real domain or subdomain.
-
-## 2. Point DNS To The Server
-
-Create a DNS record:
-
-```text
-lumina.example.com  A  your.server.ip.address
-```
-
-If your server has IPv6, you can also add an `AAAA` record.
-
-Wait until DNS resolves:
-
-```bash
-dig lumina.example.com
-```
-
-## 3. Start Lumina
+Start:
 
 ```bash
 cd deploy/docker
-docker compose up -d
+docker compose up -d --build
 ```
 
-Check the containers:
+Check:
 
 ```bash
 docker compose ps
-```
-
-Caddy will request an HTTPS certificate automatically. The first start can take
-a short moment while DNS and certificate issuance settle.
-
-## 4. Check The Server
-
-Open:
-
-```text
-https://lumina.example.com/health
-```
-
-Or run:
-
-```bash
 curl https://lumina.example.com/health
 ```
 
-Expected result:
+Expected health shape:
 
 ```json
-{"ok":true,"service":"lumina-server"}
+{
+  "ok": true,
+  "service": "lumina-server",
+  "storage": "local-json",
+  "auth": "configured"
+}
 ```
 
-## 5. Connect The Web App
+## What Runs
 
-In the Lumina web app, use:
+- `server`: serves the web app, API, and `/mcp` connector on port `8787`.
+- `caddy`: terminates HTTPS and reverse-proxies to `server`.
 
-```text
-Lumina URL: https://lumina.example.com
-Connector Token: lrr_xxxxxxxxxxxxxxxxxxxxx
+Books, notes, and progress live in the host directory configured by
+`LUMINA_HOST_DATA_DIR`.
+
+## Troubleshooting
+
+### The web page does not load
+
+```bash
+cd /opt/lumina-reading-room/repo/deploy/docker
+docker compose ps
+docker compose logs caddy
+docker compose logs server
 ```
 
-The connector endpoint is:
+Check that the DNS record points to the VPS and that ports `80` and `443` are
+open in the cloud firewall.
 
-```text
-https://lumina.example.com/mcp
+### HTTPS certificate fails
+
+Common causes:
+
+- DNS does not point to this server.
+- Ports `80` or `443` are blocked.
+- Another web server is already using those ports.
+
+### AI client says unauthorized
+
+Use the exact connector token from:
+
+```bash
+sudo grep '^LUMINA_CONNECTOR_TOKEN=' /opt/lumina-reading-room/repo/deploy/docker/.env
 ```
 
-## 6. Connect An AI Client
-
-For ChatGPT Apps, Claude.ai, or another remote MCP client, use:
+Then configure the AI client with either:
 
 ```text
 Server URL: https://lumina.example.com/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-Remote AI clients cannot reach your `localhost`. They need this public HTTPS
-URL.
-
-## Temporary No-Domain Test
-
-If you do not own a domain yet, you can test with Cloudflare Tunnel from your
-local machine:
-
-```bash
-node apps/server/src/index.js
-cloudflared tunnel --url http://localhost:8787
-```
-
-Use the printed `https://...trycloudflare.com/mcp` URL in the AI client.
-
-This is good for testing, but not for long-term use. The tunnel URL can change.
-
-## Troubleshooting
-
-### `/health` does not load
-
-Check containers:
-
-```bash
-cd deploy/docker
-docker compose ps
-docker compose logs caddy
-docker compose logs server
-```
-
-Check that DNS points to the server and ports `80` and `443` are open.
-
-### AI client says unauthorized
-
-Check that the AI client sends:
+or:
 
 ```text
-Authorization: Bearer <your-token>
+https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
-
-The token must match `LUMINA_CONNECTOR_TOKEN` in `deploy/docker/.env`.
-
-### Caddy cannot get a certificate
-
-Common causes:
-
-- The domain does not point to this server.
-- Ports `80` or `443` are blocked.
-- Another web server is already using those ports.
 
 ## Safety Notes
 
@@ -188,4 +189,3 @@ Common causes:
 - Do not publish screenshots that show your connector token.
 - Keep token validation enabled for public deployments.
 - Rotate the token if it appears in a public issue, README, screenshot, or log.
-
