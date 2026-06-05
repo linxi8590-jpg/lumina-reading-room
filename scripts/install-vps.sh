@@ -124,15 +124,20 @@ install_packages() {
   fi
 
   export DEBIAN_FRONTEND=noninteractive
-  apt-get update
-  apt-get install -y ca-certificates curl git openssl docker.io util-linux
+  apt-get update </dev/null
+  apt-get install -y ca-certificates curl git openssl docker.io util-linux </dev/null
 
   if ! docker compose version >/dev/null 2>&1; then
-    apt-get install -y docker-compose-plugin || apt-get install -y docker-compose
+    if apt-cache show docker-compose-plugin >/dev/null 2>&1; then
+      apt-get install -y docker-compose-plugin </dev/null
+    else
+      echo "docker-compose-plugin is not available in this apt repo; installing docker-compose fallback."
+      apt-get install -y docker-compose </dev/null
+    fi
   fi
 
   if command -v systemctl >/dev/null 2>&1; then
-    systemctl enable --now docker
+    systemctl enable --now docker </dev/null
   fi
 }
 
