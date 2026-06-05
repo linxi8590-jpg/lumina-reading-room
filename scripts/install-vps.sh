@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_URL="https://github.com/linxi8590-jpg/lumina-reading-room.git"
 BRANCH="main"
 INSTALL_DIR="/opt/lumina-reading-room"
-INSTALLER_REVISION="2026-06-06.dns-checkpoint"
+INSTALLER_REVISION="2026-06-06.trap-debug"
 DOMAIN=""
 YES=0
 STRICT_DNS=0
@@ -373,9 +373,16 @@ main() {
   local log_file="/var/log/lumina-install.log"
   if : >> "$log_file" 2>/dev/null; then
     chmod 600 "$log_file" 2>/dev/null || true
-    exec > >(tee -a "$log_file") 2>&1
+    if command -v stdbuf >/dev/null 2>&1; then
+      exec > >(stdbuf -oL tee -a "$log_file") 2>&1
+    else
+      exec > >(tee -a "$log_file") 2>&1
+    fi
     echo "Logging full installer output to $log_file"
   fi
+
+  trap 'rc=$?; if [[ "$rc" -ne 0 ]]; then echo "Installer aborted at line ${BASH_LINENO[0]} (exit=$rc, last cmd: ${BASH_COMMAND})" >&2; fi' ERR
+  trap 'rc=$?; echo "Installer exiting at line ${BASH_LINENO[0]:-?} with code $rc" >&2' EXIT
 
   echo "Installer revision: $INSTALLER_REVISION"
   echo "Installing Lumina for domain: $DOMAIN"
