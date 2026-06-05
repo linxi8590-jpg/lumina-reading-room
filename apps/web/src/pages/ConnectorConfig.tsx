@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import CopyButton from '../components/CopyButton'
+import { getDefaultServerUrl } from '../lib/serverConfig'
 import { useLocalStorage } from '../lib/useLocalStorage'
-
-const DEFAULT_SERVER_URL = 'http://localhost:8787'
 
 interface AiClientGuide {
   id: string
@@ -129,7 +128,7 @@ export default function ConnectorConfig() {
   const [tokenStatus, setTokenStatus] = useState('')
   const [serverUrl, setServerUrl] = useLocalStorage(
     'lumina.serverUrl',
-    DEFAULT_SERVER_URL,
+    getDefaultServerUrl(),
   )
   const [showToken, setShowToken] = useState(false)
   const [activeClient, setActiveClient] = useState<string>(AI_CLIENTS[0].id)
@@ -235,7 +234,7 @@ http_headers = { Authorization = "${authHeaderValue}" }`
               type="url"
               value={serverUrl}
               onChange={(e) => setServerUrl(e.target.value)}
-              placeholder="http://localhost:8787"
+              placeholder={getDefaultServerUrl()}
               className="w-full bg-paper-50 border border-ink-500/20 rounded px-3 py-2 text-sm font-mono"
               aria-label="服务器地址输入框"
             />

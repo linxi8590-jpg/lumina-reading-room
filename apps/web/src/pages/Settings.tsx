@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getDefaultServerUrl } from '../lib/serverConfig'
 import { useLocalStorage } from '../lib/useLocalStorage'
 
 type Backend = 'docker' | 'supabase'
@@ -231,7 +232,7 @@ const AUTH_LABEL: Record<AuthStatus, string> = {
 function Diagnostics() {
   const [serverUrlRaw] = useLocalStorage(
     'lumina.serverUrl',
-    'http://localhost:8787',
+    getDefaultServerUrl(),
   )
   const [token] = useLocalStorage('lumina.connectorToken', '')
   const [health, setHealth] = useState<HealthStatus>('idle')

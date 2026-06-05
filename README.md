@@ -131,6 +131,21 @@ docs/deploy-docker.md
 node scripts/generate-token.mjs
 ```
 
+## 手机实测
+
+手机和电脑连同一个 Wi-Fi 后，可以直接跑：
+
+```bash
+npm run dev:mobile
+```
+
+脚本会打印两个地址：
+
+- 手机浏览器打开的 Web 地址，例如 `http://192.168.1.20:5173/`。
+- 连接配置页要填写的 Lumina URL，例如 `http://192.168.1.20:8787`。
+
+手机上的 `localhost` 指的是手机自己，不是你的电脑。所以手机实测不要填 `http://localhost:8787`。
+
 ## 连接器地址格式
 
 部署完成后，你会得到两个东西：

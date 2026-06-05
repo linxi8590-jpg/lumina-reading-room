@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.0.0",
   "scripts": {
     "quickstart": "bash scripts/quickstart.sh",
+    "dev:mobile": "bash scripts/dev-mobile.sh",
     "server:dev": "node apps/server/src/index.js",
     "token": "node scripts/generate-token.mjs",
     "connector:config": "node scripts/print-connector-config.mjs",

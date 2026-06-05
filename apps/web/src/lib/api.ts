@@ -1,3 +1,5 @@
+import { getDefaultServerUrl } from './serverConfig'
+
 export class ApiError extends Error {
   status: number
   code: string | undefined
@@ -9,14 +11,12 @@ export class ApiError extends Error {
   }
 }
 
-const DEFAULT_SERVER_URL = 'http://localhost:8787'
-
 function getConfig() {
   if (typeof window === 'undefined') {
-    return { url: DEFAULT_SERVER_URL, token: '' }
+    return { url: getDefaultServerUrl(), token: '' }
   }
   const rawUrl =
-    window.localStorage.getItem('lumina.serverUrl') || DEFAULT_SERVER_URL
+    window.localStorage.getItem('lumina.serverUrl') || getDefaultServerUrl()
   const token = window.localStorage.getItem('lumina.connectorToken') || ''
   return { url: rawUrl.replace(/\/$/, ''), token }
 }

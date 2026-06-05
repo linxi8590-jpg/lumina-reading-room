@@ -83,10 +83,35 @@ Now unlocked context includes the first two paragraphs, but not the third.
 
 ```bash
 npm run quickstart
+npm run dev:mobile
 npm run check:env
 npm run server:dev
 npm run smoke:local
 ```
+
+## Test On A Phone
+
+Put your phone and computer on the same Wi-Fi, then run:
+
+```bash
+npm run dev:mobile
+```
+
+The script prints a phone URL such as:
+
+```text
+http://192.168.1.20:5173/
+```
+
+Open that URL on your phone. The connector page will default to the same LAN
+host on port `8787`, for example:
+
+```text
+http://192.168.1.20:8787
+```
+
+Do not use `localhost` on your phone. On a phone, `localhost` means the phone
+itself, not your computer.
 
 `npm run smoke:local` starts a temporary local server, imports a tiny Markdown
 book, re-imports it to check stable anchors, imports a generated EPUB, checks
