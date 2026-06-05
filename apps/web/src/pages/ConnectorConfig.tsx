@@ -10,6 +10,7 @@ interface AiClientGuide {
   description: string
   steps: string[]
   note: string
+  caveat?: string
   docsLabel?: string
   docsHref?: string
 }
@@ -36,8 +37,10 @@ const AI_CLIENTS: AiClientGuide[] = [
       '激活 Lumina connector，对 ChatGPT 说"读我现在那一页"。',
     ],
     note: 'OpenAI 官方 MCP 文档可以看下面的链接，对接细节按官方为准。',
+    caveat:
+      '这条指引基于 OpenAI 公开文档整理，Lumina 团队尚未用真实 ChatGPT 账号完整实测。遇到入口名称或字段不同，请以 ChatGPT 当前界面为准。',
     docsLabel: 'OpenAI MCP 文档',
-    docsHref: 'https://developers.openai.com/api/docs/mcp',
+    docsHref: 'https://developers.openai.com/api/docs/guides/tools-connectors-mcp',
   },
   {
     id: 'codex',
@@ -296,6 +299,11 @@ export default function ConnectorConfig() {
                   ))}
                 </ol>
                 <p className="text-xs text-ink-500 italic">{client.note}</p>
+                {client.caveat && (
+                  <p className="text-xs text-ink-500 mt-2">
+                    {client.caveat}
+                  </p>
+                )}
                 {client.docsHref && (
                   <p className="text-xs text-ink-500 mt-2">
                     <a
