@@ -150,6 +150,7 @@ ensure_swap_for_small_vps() {
 
   if [[ -e /swapfile ]]; then
     if swapon --show=NAME --noheadings 2>/dev/null | awk '{print $1}' | grep -qx '/swapfile'; then
+      echo "  /swapfile is already enabled, skipping."
       return
     fi
     if ! rm -f /swapfile; then
@@ -160,6 +161,7 @@ ensure_swap_for_small_vps() {
 
   local created=0
   if command -v fallocate >/dev/null 2>&1; then
+    echo "  [1/4] allocating /swapfile (fallocate -l 2G)..."
     if fallocate -l 2G /swapfile 2>/dev/null; then
       created=1
     else
@@ -167,6 +169,7 @@ ensure_swap_for_small_vps() {
     fi
   fi
   if [[ "$created" -eq 0 ]]; then
+    echo "  [1/4] allocating /swapfile (dd 2048 MB, may take 30–60s)..."
     if ! dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none; then
       warn "Could not create /swapfile; continuing without swap. Docker build may need a larger VPS."
       rm -f /swapfile 2>/dev/null || true
@@ -174,16 +177,19 @@ ensure_swap_for_small_vps() {
     fi
   fi
 
+  echo "  [2/4] chmod 600 /swapfile"
   if ! chmod 600 /swapfile; then
     warn "Could not set permissions on /swapfile; continuing without swap."
     rm -f /swapfile 2>/dev/null || true
     return 0
   fi
+  echo "  [3/4] mkswap /swapfile"
   if ! mkswap /swapfile >/dev/null 2>&1; then
     warn "mkswap failed; continuing without swap. Docker build may need a larger VPS."
     rm -f /swapfile 2>/dev/null || true
     return 0
   fi
+  echo "  [4/4] swapon /swapfile"
   if ! swapon /swapfile; then
     warn "swapon failed; continuing without swap. Docker build may need a larger VPS."
     rm -f /swapfile 2>/dev/null || true
@@ -192,6 +198,7 @@ ensure_swap_for_small_vps() {
   if ! grep -q '^/swapfile ' /etc/fstab 2>/dev/null; then
     echo '/swapfile none swap sw 0 0' >> /etc/fstab
   fi
+  echo "  Swap ready ($(free -h | awk '/Swap:/ {print $2}'))."
 }
 
 compose_cmd() {
