@@ -28,23 +28,16 @@ SSH into the VPS:
 ssh root@your-server-ip
 ```
 
-Run the installer. Replace the domain with your real full domain or subdomain:
+Run the installer. Replace the `DOMAIN=` value with your real full domain or subdomain:
 
 ```bash
-curl -fsSL -H 'Cache-Control: no-cache' \
-  "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" \
-  -o /tmp/lumina-install-vps.sh
-grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh
-bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
+DOMAIN=lumina.example.com; curl -fsSL -H 'Cache-Control: no-cache' "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" -o /tmp/lumina-install-vps.sh && grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh && bash /tmp/lumina-install-vps.sh --domain "$DOMAIN" --yes
 ```
 
-If you are not logged in as `root`, replace the last line with:
+If you are not logged in as `root`, replace `bash /tmp/lumina-install-vps.sh`
+with `sudo bash /tmp/lumina-install-vps.sh`.
 
-```bash
-sudo bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
-```
-
-The `grep` line prints the installer revision so you can confirm that the VPS is
+The `grep` command prints the installer revision so you can confirm that the VPS is
 running the current installer rather than an old cached copy.
 
 The installer will:
@@ -96,11 +89,7 @@ HTTP and HTTPS traffic to this VPS.
 Run the same command again:
 
 ```bash
-curl -fsSL -H 'Cache-Control: no-cache' \
-  "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" \
-  -o /tmp/lumina-install-vps.sh
-grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh
-bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
+DOMAIN=lumina.example.com; curl -fsSL -H 'Cache-Control: no-cache' "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?v=$(date +%s)" -o /tmp/lumina-install-vps.sh && grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh && bash /tmp/lumina-install-vps.sh --domain "$DOMAIN" --yes
 ```
 
 The installer preserves the existing connector token and data directory, then
