@@ -124,11 +124,13 @@ install_packages() {
   fi
 
   export DEBIAN_FRONTEND=noninteractive
+  echo "Installing required apt packages..."
   apt-get update </dev/null
   apt-get install -y ca-certificates curl git openssl docker.io util-linux </dev/null
 
-  if ! docker compose version >/dev/null 2>&1; then
-    if apt-cache show docker-compose-plugin >/dev/null 2>&1; then
+  if ! docker compose version </dev/null >/dev/null 2>&1; then
+    if apt-cache show docker-compose-plugin </dev/null >/dev/null 2>&1; then
+      echo "Installing Docker Compose plugin..."
       apt-get install -y docker-compose-plugin </dev/null
     else
       echo "docker-compose-plugin is not available in this apt repo; installing docker-compose fallback."
@@ -136,8 +138,20 @@ install_packages() {
     fi
   fi
 
+  echo "Starting Docker service..."
   if command -v systemctl >/dev/null 2>&1; then
-    systemctl enable --now docker </dev/null
+    if ! systemctl enable --now docker </dev/null; then
+      warn "systemctl could not start Docker; trying service docker start."
+      if command -v service >/dev/null 2>&1; then
+        service docker start </dev/null || true
+      fi
+    fi
+  elif command -v service >/dev/null 2>&1; then
+    service docker start </dev/null || true
+  fi
+
+  if ! docker info </dev/null >/dev/null 2>&1; then
+    die "Docker daemon is not running. Try: systemctl start docker"
   fi
 }
 
@@ -207,7 +221,7 @@ ensure_swap_for_small_vps() {
 }
 
 compose_cmd() {
-  if docker compose version >/dev/null 2>&1; then
+  if docker compose version </dev/null >/dev/null 2>&1; then
     echo "docker compose"
   elif command -v docker-compose >/dev/null 2>&1; then
     echo "docker-compose"
