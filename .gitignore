@@ -1,6 +1,12 @@
 node_modules/
 dist/
 .env
+.env.*
+!.env.example
 .lumina/
 .lumina-test/
+output/
+coverage/
+.turbo/
+.vite/
 .DS_Store

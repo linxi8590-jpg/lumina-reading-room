@@ -36,13 +36,26 @@ docs/reading-waterline.md
 
 ## 现在的状态
 
-这是项目骨架第一刀，先固定部署方式、数据表、连接器工具和帮助文档结构。
+这是可本地跑通的早期版本。
 
-UI 规格正在制定，最终版本会落在：
+已经有：
+
+- Web 阅读器：书架、上传、阅读区、章节导航、笔记栏、阅读水位线。
+- 书籍导入：TXT、Markdown、EPUB。
+- 笔记：用户笔记、AI 笔记、五种笔记类型、Markdown 导出。
+- 连接器：`/mcp` endpoint、令牌校验、已读内容过滤、AI 客户端配置指引。
+- 设置页：本地 / Docker 与 Supabase 路线说明、连接诊断、字号和主题控制。
+- 本地 smoke test：验证导入、水位线、AI 笔记、重导入锚点和 EPUB。
+
+设计和工程说明见：
 
 ```text
 docs/ui-spec.md
+docs/architecture.md
+docs/security.md
 ```
+
+还没最终决定的公开仓库事项：项目 license。正式复用或再分发前请等仓库加入 `LICENSE` 文件。
 
 ## 选择一种安装方式
 
@@ -123,6 +136,22 @@ deploy/supabase       # Supabase SQL 和策略
 deploy/docker         # Docker 部署模板
 scripts               # 一键脚本和检查工具
 docs                  # 面向普通用户的帮助文档
+```
+
+## 本地开发
+
+```bash
+pnpm install
+npm run quickstart
+npm run smoke:local
+pnpm --filter @lumina/web build
+```
+
+更多说明：
+
+```text
+docs/local-dev.md
+CONTRIBUTING.md
 ```
 
 ## 最重要的安全边界
