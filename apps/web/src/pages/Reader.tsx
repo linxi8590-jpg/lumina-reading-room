@@ -115,6 +115,21 @@ export default function Reader() {
     }
   }, [bookId, configured])
 
+  // After payload load (and on every progress change), scroll the current
+  // paragraph into view so reopening the book lands you where you left off
+  // instead of at the chapter title. We target p[aria-current=true] specifically
+  // because the chapter nav buttons in the side drawers also carry aria-current.
+  const currentSectionIndex = payload?.state.current_section_index
+  const currentParagraphIndex = payload?.state.current_paragraph_index
+  useEffect(() => {
+    if (currentSectionIndex === undefined || currentParagraphIndex === undefined) return
+    const id = requestAnimationFrame(() => {
+      const el = document.querySelector('article p[aria-current="true"]') as HTMLElement | null
+      el?.scrollIntoView({ block: 'center', behavior: 'auto' })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [bookId, currentSectionIndex, currentParagraphIndex])
+
   if (!configured) {
     return (
       <CenterMessage>
