@@ -211,7 +211,7 @@ export default function Reader() {
   return (
     <main
       data-reader-font={fontSize}
-      className="min-h-screen bg-paper-50 text-ink-900"
+      className="min-h-screen bg-paper-50 text-ink-900 pt-[env(safe-area-inset-top)]"
     >
       <div className="grid grid-cols-1 md:grid-cols-[200px_1fr_320px] min-h-screen">
         {/* 左：章节导航 */}
@@ -264,7 +264,7 @@ export default function Reader() {
 
         {/* 中：阅读区 */}
         <article
-          className="px-6 py-6"
+          className="px-6 sm:px-8 md:px-10 py-6"
           onTouchStart={(e) => {
             if (e.touches.length !== 1) return
             const t = e.touches[0]
@@ -342,7 +342,7 @@ export default function Reader() {
           />
 
           {currentSection ? (
-            <div className="reading mx-auto pb-32">
+            <div className="reading mx-auto pb-32 max-w-2xl">
               <h2 className="font-serif text-2xl mb-6">{currentSection.title}</h2>
               {currentSection.paragraphs
                 .slice(0, state.current_paragraph_index + 1)
@@ -362,14 +362,16 @@ export default function Reader() {
                         {paragraph}
                       </p>
                       {!isComposerHere && (
-                        <button
-                          type="button"
-                          onClick={() => setComposerParagraphIdx(idx)}
-                          aria-label={`为第 ${idx + 1} 段写一条笔记`}
-                          className="text-[10px] text-ink-500 hover:text-sky-700 transition-colors mb-4 opacity-60 hover:opacity-100"
-                        >
-                          + 写一条
-                        </button>
+                        <div className="flex justify-end mb-4">
+                          <button
+                            type="button"
+                            onClick={() => setComposerParagraphIdx(idx)}
+                            aria-label={`为第 ${idx + 1} 段添加笔记`}
+                            className="text-xs px-2.5 py-1 border border-ink-500/20 text-ink-500 hover:text-sky-700 hover:border-sky-700/40 rounded transition-colors"
+                          >
+                            + 添加笔记
+                          </button>
+                        </div>
                       )}
                       {isComposerHere && bookId && (
                         <NoteComposer
