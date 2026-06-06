@@ -679,13 +679,23 @@ async function parseEpubBody(body) {
 
   const baseDir = path.posix.dirname(opfPath);
   const blocks = [];
+  let chapterCounter = 0;
   for (const itemref of spineItems) {
     const idref = itemref?.['@_idref'];
     const item = manifestById.get(idref);
     if (!item || !isReadableHtmlItem(item)) continue;
     const htmlPath = resolveZipPath(baseDir, item['@_href']);
     const html = await readZipText(zip, htmlPath);
-    blocks.push(...extractXhtmlBlocks(html));
+    const itemBlocks = extractXhtmlBlocks(html);
+    if (itemBlocks.length === 0) continue;
+    chapterCounter += 1;
+    // Use EPUB spine structure as chapter boundary: each spine item is a chapter.
+    // If the item already starts with its own heading (h1/h2/h3 → markdown "# "),
+    // skip the injected one to avoid duplicate titles.
+    if (!/^#{1,3}\s/.test(itemBlocks[0])) {
+      blocks.push(`# Chapter ${chapterCounter}`);
+    }
+    blocks.push(...itemBlocks);
   }
 
   const text = blocks.join('\n\n').trim();
@@ -967,6 +977,11 @@ function clampParagraphIndex(value, section) {
   return Math.min(value, maxParagraphIndex);
 }
 
+// Auto-chunk sections longer than this many paragraphs. Keeps a single oversized
+// chapter (or a plain-text book with no headings) from rendering as one giant
+// section the browser can't scroll through and the user can't track progress in.
+const SECTION_PARAGRAPH_LIMIT = 50;
+
 function splitIntoSections(text) {
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const sections = [];
@@ -990,7 +1005,27 @@ function splitIntoSections(text) {
     sections[0].title = 'Start';
   }
 
-  return sections;
+  return chunkOversizedSections(sections);
+}
+
+function chunkOversizedSections(sections) {
+  const result = [];
+  for (const section of sections) {
+    if (section.paragraphs.length <= SECTION_PARAGRAPH_LIMIT) {
+      result.push(section);
+      continue;
+    }
+    const total = Math.ceil(section.paragraphs.length / SECTION_PARAGRAPH_LIMIT);
+    for (let i = 0; i < section.paragraphs.length; i += SECTION_PARAGRAPH_LIMIT) {
+      const sliceParagraphs = section.paragraphs.slice(i, i + SECTION_PARAGRAPH_LIMIT);
+      const partIndex = Math.floor(i / SECTION_PARAGRAPH_LIMIT) + 1;
+      const title = section.title === 'Start'
+        ? `Section ${partIndex}`
+        : `${section.title} (${partIndex}/${total})`;
+      result.push({ title, paragraphs: sliceParagraphs });
+    }
+  }
+  return result;
 }
 
 function isHeading(line) {
