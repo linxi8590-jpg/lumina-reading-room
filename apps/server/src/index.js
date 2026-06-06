@@ -358,7 +358,35 @@ async function handleApi(req, res, url) {
 
   if (req.method === 'GET' && url.pathname === '/api/books') {
     const store = await readStore();
-    sendJson(res, 200, { books: store.books });
+    const books = store.books.map((book) => {
+      const state = store.reading_states.find((s) => s.book_id === book.id) || null;
+      const sections = store.sections
+        .filter((s) => s.book_id === book.id)
+        .sort((a, b) => a.section_index - b.section_index);
+      const totalParagraphs = sections.reduce((sum, s) => sum + s.paragraphs.length, 0);
+      const totalSections = sections.length;
+      let readParagraphs = 0;
+      if (state) {
+        for (const s of sections) {
+          if (s.section_index < state.current_section_index) readParagraphs += s.paragraphs.length;
+          else if (s.section_index === state.current_section_index)
+            readParagraphs += Math.min(state.current_paragraph_index + 1, s.paragraphs.length);
+        }
+      }
+      const currentSection = sections[state?.current_section_index ?? 0] || null;
+      return {
+        ...book,
+        progress: {
+          total_sections: totalSections,
+          total_paragraphs: totalParagraphs,
+          read_paragraphs: readParagraphs,
+          current_section_index: state?.current_section_index ?? 0,
+          current_paragraph_index: state?.current_paragraph_index ?? 0,
+          current_section_title: currentSection?.title ?? null,
+        },
+      };
+    });
+    sendJson(res, 200, { books });
     return;
   }
 

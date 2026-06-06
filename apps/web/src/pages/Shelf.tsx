@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, isConfigured } from '../lib/api'
 
+interface BookProgress {
+  total_sections: number
+  total_paragraphs: number
+  read_paragraphs: number
+  current_section_index: number
+  current_paragraph_index: number
+  current_section_title: string | null
+}
+
 interface Book {
   id: string
   title: string
@@ -9,6 +18,7 @@ interface Book {
   source_filename: string | null
   created_at: string
   updated_at: string
+  progress?: BookProgress
 }
 
 interface BooksResponse {
@@ -76,32 +86,36 @@ export default function Shelf() {
   }
 
   return (
-    <main className="min-h-screen bg-paper-50 text-ink-900 px-6 py-12">
-      <header className="max-w-5xl mx-auto mb-8 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-serif">书架</h1>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link
-            to="/upload"
-            className="px-3 py-1 bg-lamp-500 text-ink-900 rounded font-medium hover:bg-lamp-200 transition-colors"
-            aria-label="上传新书"
-          >
-            + 上传新书
-          </Link>
-          <Link
-            to="/connector"
-            className="text-sky-700 underline"
-            aria-label="连接配置"
-          >
-            连接配置
-          </Link>
-          <Link
-            to="/settings"
-            className="text-sky-700 underline"
-            aria-label="设置"
-          >
-            设置
-          </Link>
-        </nav>
+    <main className="min-h-screen bg-paper-50 text-ink-900 px-5 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-12">
+      <header className="max-w-5xl mx-auto mb-6">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h1 className="text-2xl font-serif">书架</h1>
+          <nav className="flex items-center gap-3 text-sm" aria-label="次要导航">
+            <Link
+              to="/connector"
+              className="text-ink-500 hover:text-sky-700 transition-colors"
+              aria-label="连接配置"
+              title="连接配置"
+            >
+              连接
+            </Link>
+            <Link
+              to="/settings"
+              className="text-ink-500 hover:text-sky-700 transition-colors"
+              aria-label="设置"
+              title="设置"
+            >
+              设置
+            </Link>
+          </nav>
+        </div>
+        <Link
+          to="/upload"
+          className="inline-block px-3 py-1.5 bg-lamp-500 text-ink-900 rounded font-medium hover:bg-lamp-200 transition-colors text-sm"
+          aria-label="上传新书"
+        >
+          + 上传新书
+        </Link>
       </header>
 
       {error ? (
@@ -141,32 +155,67 @@ export default function Shelf() {
           aria-label={`书架，共 ${books.length} 本书`}
           className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          {books.map((book) => (
-            <div
-              key={book.id}
-              className="relative bg-paper-100 border border-ink-500/15 rounded-lg hover:bg-paper-50 transition-colors"
-            >
-              <Link
-                to={`/reader/${book.id}`}
-                className="block p-4 pr-12"
-                aria-label={`${book.title}${book.author ? `，${book.author}` : ''}`}
+          {books.map((book) => {
+            const p = book.progress
+            const percent = p && p.total_paragraphs > 0
+              ? Math.round((p.read_paragraphs / p.total_paragraphs) * 100)
+              : 0
+            const isUnread = !p || p.read_paragraphs <= 1
+            const statusLine = !p
+              ? null
+              : isUnread
+                ? `共 ${p.total_sections} 章 / ${p.total_paragraphs} 段，未开始`
+                : `${p.current_section_title ?? '阅读中'} · 第 ${p.current_paragraph_index + 1} 段 · ${percent}%`
+            const ariaLabel = `《${book.title}》${book.author ? `，作者${book.author}` : ''}${
+              p ? `，${isUnread ? '尚未开始' : `已读 ${percent} %`}` : ''
+            }`
+            return (
+              <div
+                key={book.id}
+                className="relative bg-paper-100 border border-ink-500/15 rounded-lg shadow-sm hover:shadow-md hover:bg-paper-50 transition-all overflow-hidden"
               >
-                <h2 className="font-serif text-lg mb-1">{book.title}</h2>
-                {book.author && (
-                  <p className="text-sm text-ink-500">{book.author}</p>
-                )}
-              </Link>
-              <button
-                type="button"
-                onClick={() => handleDelete(book)}
-                disabled={deletingId === book.id}
-                aria-label={`删除《${book.title}》`}
-                className="absolute top-2 right-2 px-2 py-1 text-xs text-ink-500 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {deletingId === book.id ? '删除中…' : '删除'}
-              </button>
-            </div>
-          ))}
+                <Link
+                  to={`/reader/${book.id}`}
+                  className="block p-4 pr-12"
+                  aria-label={ariaLabel}
+                >
+                  <h2 className="font-serif text-lg mb-1 leading-snug">{book.title}</h2>
+                  {book.author && (
+                    <p className="text-sm text-ink-500 mb-2">{book.author}</p>
+                  )}
+                  {statusLine && (
+                    <p className="text-xs text-ink-500 mt-3 leading-relaxed">
+                      {statusLine}
+                    </p>
+                  )}
+                  {p && p.total_paragraphs > 0 && (
+                    <div
+                      className="mt-2 h-1 bg-paper-50 rounded overflow-hidden"
+                      role="progressbar"
+                      aria-label={`阅读进度 ${percent}%`}
+                      aria-valuenow={percent}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <div
+                        className="h-full bg-lamp-500 transition-all"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  )}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(book)}
+                  disabled={deletingId === book.id}
+                  aria-label={`删除《${book.title}》`}
+                  className="absolute top-2 right-2 px-2 py-1 text-xs text-ink-500 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {deletingId === book.id ? '删除中…' : '删除'}
+                </button>
+              </div>
+            )
+          })}
         </section>
       )}
     </main>
