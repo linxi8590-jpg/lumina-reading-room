@@ -18,7 +18,25 @@ interface BooksResponse {
 export default function Shelf() {
   const [books, setBooks] = useState<Book[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const configured = isConfigured()
+
+  async function handleDelete(book: Book) {
+    if (deletingId) return
+    const confirmed = window.confirm(
+      `确认删除《${book.title}》？这本书的全部内容、笔记和阅读进度都会一起删除，无法恢复。`,
+    )
+    if (!confirmed) return
+    setDeletingId(book.id)
+    try {
+      await api.delete(`/api/books/${book.id}`)
+      setBooks((prev) => (prev ? prev.filter((b) => b.id !== book.id) : prev))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'delete_failed')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   useEffect(() => {
     if (!configured) return
@@ -124,17 +142,30 @@ export default function Shelf() {
           className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           {books.map((book) => (
-            <Link
+            <div
               key={book.id}
-              to={`/reader/${book.id}`}
-              className="block bg-paper-100 border border-ink-500/15 rounded-lg p-4 hover:bg-paper-50 transition-colors"
-              aria-label={`${book.title}${book.author ? `，${book.author}` : ''}`}
+              className="relative bg-paper-100 border border-ink-500/15 rounded-lg hover:bg-paper-50 transition-colors"
             >
-              <h2 className="font-serif text-lg mb-1">{book.title}</h2>
-              {book.author && (
-                <p className="text-sm text-ink-500">{book.author}</p>
-              )}
-            </Link>
+              <Link
+                to={`/reader/${book.id}`}
+                className="block p-4 pr-12"
+                aria-label={`${book.title}${book.author ? `，${book.author}` : ''}`}
+              >
+                <h2 className="font-serif text-lg mb-1">{book.title}</h2>
+                {book.author && (
+                  <p className="text-sm text-ink-500">{book.author}</p>
+                )}
+              </Link>
+              <button
+                type="button"
+                onClick={() => handleDelete(book)}
+                disabled={deletingId === book.id}
+                aria-label={`删除《${book.title}》`}
+                className="absolute top-2 right-2 px-2 py-1 text-xs text-ink-500 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {deletingId === book.id ? '删除中…' : '删除'}
+              </button>
+            </div>
           ))}
         </section>
       )}
