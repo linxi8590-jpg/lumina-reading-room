@@ -1,0 +1,20 @@
+{
+  "name": "Lumina Reading Room · 星灯书房",
+  "short_name": "星灯书房",
+  "description": "自托管 AI 共读书房：AI 只能看到你已经读到的位置。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF7EE",
+  "theme_color": "#E8AC3D",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
