@@ -346,6 +346,13 @@ async function writeStore(store) {
   await fs.writeFile(dataFile, `${JSON.stringify(store, null, 2)}\n`);
 }
 
+function deleteBook(store, bookId) {
+  store.books = store.books.filter((book) => book.id !== bookId);
+  store.sections = store.sections.filter((section) => section.book_id !== bookId);
+  store.reading_notes = store.reading_notes.filter((note) => note.book_id !== bookId);
+  store.reading_states = store.reading_states.filter((state) => state.book_id !== bookId);
+}
+
 async function handleApi(req, res, url) {
   const parts = url.pathname.split('/').filter(Boolean);
 
@@ -377,6 +384,13 @@ async function handleApi(req, res, url) {
 
     if (req.method === 'GET' && parts.length === 3) {
       sendJson(res, 200, getBookPayload(store, bookId));
+      return;
+    }
+
+    if (req.method === 'DELETE' && parts.length === 3) {
+      deleteBook(store, bookId);
+      await writeStore(store);
+      sendJson(res, 200, { deleted: bookId });
       return;
     }
 
