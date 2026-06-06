@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { HTMLAttributes, ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, isConfigured } from '../lib/api'
@@ -56,6 +56,7 @@ export default function Reader() {
   const [notesError, setNotesError] = useState<string | null>(null)
   const [composerParagraphIdx, setComposerParagraphIdx] = useState<number | null>(null)
   const [mobileDrawer, setMobileDrawer] = useState<'chapters' | 'notes' | null>(null)
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null)
   const { fontSize } = useReaderPrefs()
   const configured = isConfigured()
 
@@ -262,7 +263,37 @@ export default function Reader() {
         </aside>
 
         {/* 中：阅读区 */}
-        <article className="px-6 py-6">
+        <article
+          className="px-6 py-6"
+          onTouchStart={(e) => {
+            if (e.touches.length !== 1) return
+            const t = e.touches[0]
+            swipeStartRef.current = { x: t.clientX, y: t.clientY }
+          }}
+          onTouchEnd={(e) => {
+            const start = swipeStartRef.current
+            swipeStartRef.current = null
+            if (!start || advancing) return
+            const t = e.changedTouches[0]
+            if (!t) return
+            const dx = t.clientX - start.x
+            const dy = t.clientY - start.y
+            // 60px horizontal minimum, 40px vertical max — keeps vertical scrolls
+            // and accidental taps from triggering page navigation.
+            if (Math.abs(dx) < 60 || Math.abs(dy) > 40) return
+            if (dx < 0) {
+              if (hasMoreInSection) {
+                advance(state.current_section_index, nextParagraph)
+              } else if (hasNextSection) {
+                advance(state.current_section_index + 1, 0)
+              }
+            } else {
+              if (canAdvance(state.current_section_index, state.current_paragraph_index - 1)) {
+                advance(state.current_section_index, state.current_paragraph_index - 1)
+              }
+            }
+          }}
+        >
           {/* mobile 顶部工具栏：抽屉入口 */}
           <div className="md:hidden -mx-6 px-6 pb-3 mb-4 flex items-center gap-2 border-b border-ink-500/15">
             <Link
