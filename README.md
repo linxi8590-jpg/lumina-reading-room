@@ -131,21 +131,17 @@ ChatGPT:   https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 
 ## 更新已经部署的服务器
 
-再次 SSH 登录服务器，重新跑同样两条命令即可。先下载：
+**只想更新代码 / 跑最新版本**（最常见，最轻）：
 
 ```bash
-curl -fsSL -o /tmp/lumina-install-vps.sh "https://raw.githubusercontent.com/linxi8590-jpg/lumina-reading-room/main/scripts/install-vps.sh?nocache=$(date +%s)"
+cd /opt/lumina-reading-room/repo && sudo git pull && cd deploy/docker && sudo docker compose up -d --build
 ```
 
-再用你的子域名运行：
+这一条命令会拉最新代码 + 重新构建容器。**连接令牌、上传的书、笔记、阅读进度全部保留**，AI 那边的连接器不用重新配置。
 
-```bash
-bash /tmp/lumina-install-vps.sh --domain lumina.example.com --yes
-```
+**只有改了域名或者想重跑全套安装流程**才需要重新走当初装机那两条 `curl + bash /tmp/lumina-install-vps.sh` 命令。这种重跑也会保留原来的令牌——脚本检测到 `.env` 存在就不会生成新令牌。
 
-脚本会保留原来的连接令牌和数据目录，只更新代码和容器。
-
-如果第一次把主域名填错了，改成正确的完整子域名后重新运行上面的命令即可，脚本会更新部署配置。
+如果第一次把主域名填错了，改成正确的完整子域名后重新运行装机命令即可，脚本会更新部署配置。
 
 ## 当前状态
 
