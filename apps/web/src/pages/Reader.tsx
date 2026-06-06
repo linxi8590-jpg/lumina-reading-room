@@ -46,11 +46,6 @@ interface BookPayload {
   state: ReadingState
 }
 
-function compare(sectionA: number, paragraphA: number, sectionB: number, paragraphB: number) {
-  if (sectionA !== sectionB) return sectionA - sectionB
-  return paragraphA - paragraphB
-}
-
 export default function Reader() {
   const { bookId } = useParams<{ bookId: string }>()
   const [payload, setPayload] = useState<BookPayload | null>(null)
@@ -318,55 +313,56 @@ export default function Reader() {
           {currentSection ? (
             <div className="reading mx-auto pb-32">
               <h2 className="font-serif text-2xl mb-6">{currentSection.title}</h2>
-              {currentSection.paragraphs.map((paragraph, idx) => {
-                const isCurrent = idx === state.current_paragraph_index
-                const isBeforeCurrent =
-                  compare(
-                    state.current_section_index,
-                    idx,
-                    state.current_section_index,
-                    state.current_paragraph_index,
-                  ) < 0
-                const isComposerHere = composerParagraphIdx === idx
-                return (
-                  <div key={`${currentSection.id}-${idx}`}>
-                    <p
-                      aria-current={isCurrent ? 'true' : undefined}
-                      className={`mb-2 transition-colors ${
-                        isCurrent
-                          ? 'border-l-2 border-lamp-500 pl-4 text-ink-900'
-                          : isBeforeCurrent
-                            ? 'text-ink-700'
-                            : 'text-ink-500'
-                      }`}
-                    >
-                      {paragraph}
-                    </p>
-                    {!isComposerHere && (
-                      <button
-                        type="button"
-                        onClick={() => setComposerParagraphIdx(idx)}
-                        aria-label={`为第 ${idx + 1} 段写一条笔记`}
-                        className="text-[10px] text-ink-500 hover:text-sky-700 transition-colors mb-4 opacity-60 hover:opacity-100"
+              {currentSection.paragraphs
+                .slice(0, state.current_paragraph_index + 1)
+                .map((paragraph, idx) => {
+                  const isCurrent = idx === state.current_paragraph_index
+                  const isComposerHere = composerParagraphIdx === idx
+                  return (
+                    <div key={`${currentSection.id}-${idx}`}>
+                      <p
+                        aria-current={isCurrent ? 'true' : undefined}
+                        className={`mb-2 transition-colors ${
+                          isCurrent
+                            ? 'border-l-2 border-lamp-500 pl-4 text-ink-900'
+                            : 'text-ink-700'
+                        }`}
                       >
-                        + 写一条
-                      </button>
-                    )}
-                    {isComposerHere && bookId && (
-                      <NoteComposer
-                        bookId={bookId}
-                        sectionId={currentSection.id}
-                        paragraphIndex={idx}
-                        onSaved={(note) => {
-                          setNotes((prev) => [...prev, note])
-                          setComposerParagraphIdx(null)
-                        }}
-                        onCancel={() => setComposerParagraphIdx(null)}
-                      />
-                    )}
-                  </div>
-                )
-              })}
+                        {paragraph}
+                      </p>
+                      {!isComposerHere && (
+                        <button
+                          type="button"
+                          onClick={() => setComposerParagraphIdx(idx)}
+                          aria-label={`为第 ${idx + 1} 段写一条笔记`}
+                          className="text-[10px] text-ink-500 hover:text-sky-700 transition-colors mb-4 opacity-60 hover:opacity-100"
+                        >
+                          + 写一条
+                        </button>
+                      )}
+                      {isComposerHere && bookId && (
+                        <NoteComposer
+                          bookId={bookId}
+                          sectionId={currentSection.id}
+                          paragraphIndex={idx}
+                          onSaved={(note) => {
+                            setNotes((prev) => [...prev, note])
+                            setComposerParagraphIdx(null)
+                          }}
+                          onCancel={() => setComposerParagraphIdx(null)}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+              {hasMoreInSection && (
+                <p
+                  aria-hidden="true"
+                  className="text-center text-xs text-ink-500/60 mt-6 select-none"
+                >
+                  …下一段未解锁，点底部"下一段"继续
+                </p>
+              )}
             </div>
           ) : (
             <p className="text-center text-ink-500">没有内容。</p>

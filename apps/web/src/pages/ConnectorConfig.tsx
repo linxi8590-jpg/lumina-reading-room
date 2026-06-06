@@ -50,10 +50,10 @@ const AI_CLIENTS: AiClientGuide[] = [
     steps: [
       '确认 Lumina 地址是公网 HTTPS，不是 localhost。',
       '在 ChatGPT 的 Apps / Connectors / Developer 入口添加远程 MCP server。',
-      '用下面生成的 MCP URL 和 Authorization token 填写配置。',
+      '把下面生成的 ChatGPT 连接器 URL 粘进去，URL 应以 /sse?token=... 结尾。',
       '激活 Lumina connector，对 ChatGPT 说"读我现在那一页"。',
     ],
-    note: 'OpenAI API 里的远程 MCP 配置使用 server_url 和 authorization；ChatGPT 界面字段名以当前客户端为准。',
+    note: 'ChatGPT 桌面 / 网页版的远程连接器也走 SSE 协议（跟 Claude.ai 同款），不是 /mcp 结尾。OpenAI Responses API 的开发者用法在下方备选配置里另给。',
     docsLabel: 'OpenAI MCP 文档',
     docsHref: 'https://developers.openai.com/api/docs/guides/tools-connectors-mcp',
   },
@@ -142,10 +142,6 @@ export default function ConnectorConfig() {
   const tokenDisplay = showToken ? token : maskToken(token)
   const tokenValue = isTokenSet ? token : '<connector-token>'
   const authHeaderValue = `Bearer ${tokenValue}`
-  const mcpConnectorUrlWithToken =
-    mcpUrl && isTokenSet ? `${mcpUrl}?token=${encodeURIComponent(token)}` : ''
-  const mcpConnectorUrlPreview =
-    mcpConnectorUrlWithToken || 'https://your-domain.example/mcp?token=<connector-token>'
   const claudeConnectorUrlWithToken =
     sseUrl && isTokenSet ? `${sseUrl}?token=${encodeURIComponent(token)}` : ''
   const claudeConnectorUrlPreview =
@@ -462,15 +458,15 @@ http_headers = { Authorization = "${authHeaderValue}" }`
                     <>
                       <ConfigBlock
                         title="ChatGPT 连接器 URL（含 token）"
-                        description="给 ChatGPT Apps / Developer mode 里只填 remote MCP URL 的界面使用。这个链接包含钥匙。"
-                        value={mcpConnectorUrlPreview}
+                        description="ChatGPT 也用 SSE 协议。粘这一条到只填 remote MCP URL 的界面，URL 应以 /sse?token=... 结尾。"
+                        value={claudeConnectorUrlPreview}
                         copyLabel="ChatGPT 连接器 URL"
                         disabled={!configReady}
                       />
                       <ConfigBlock
                         title="MCP URL"
                         description="如果界面把 URL 和认证分开填，server_url 填这一行。"
-                        value={mcpUrl || 'https://your-domain.example/mcp'}
+                        value={sseUrl || 'https://your-domain.example/sse'}
                         copyLabel="ChatGPT MCP URL"
                         disabled={!isUrlSet}
                       />
