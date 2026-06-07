@@ -74,22 +74,17 @@ const mcpTools = [
   },
   {
     name: 'save_ai_note',
-    description: 'Save an AI note at or before the reader unlocked position.',
+    description: 'Use this when the reader asks you to save a note. Save the note to the current visible reading position. Only provide the note text unless the reader asks for a specific note type.',
     annotations: writeToolAnnotations,
     inputSchema: {
       type: 'object',
       properties: {
-        book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' },
-        section_id: { type: 'string', description: 'Optional section id.' },
-        section_index: { type: 'number', description: 'Optional section number, starting at 0.' },
-        paragraph_index: { type: 'number', description: 'Optional paragraph number, starting at 0.' },
         note_type: {
           type: 'string',
           enum: [...noteTypes],
-          description: 'Kind of note to save.'
+          description: 'Optional kind of note to save. Use reflection unless the reader asks for another type.'
         },
-        content: { type: 'string', description: 'Note text.' },
-        model_name: { type: 'string', description: 'Optional AI model name.' }
+        content: { type: 'string', description: 'The note text to save.' }
       },
       required: ['content']
     }
@@ -558,6 +553,7 @@ async function handleMcpJsonRpc(message) {
   }
 
   try {
+    console.log(`[mcp jsonrpc] id=${id ?? '(notification)'} method=${message.method}`);
     switch (message.method) {
       case 'initialize':
         return jsonRpcResult(id, {
@@ -631,7 +627,7 @@ async function callLuminaTool(tool, args = {}) {
       result = getReadingNotes(store, args.book_id || inferBookId(store), args.section_id);
       break;
     case 'save_ai_note':
-      result = saveReadingNote(store, args.book_id || inferBookId(store), {
+      result = saveReadingNoteAtCurrentPosition(store, args.book_id || inferBookId(store), {
         ...args,
         author_type: 'ai'
       });
@@ -1200,6 +1196,16 @@ function getReadingNotes(store, bookId, sectionId) {
     .filter((note) => !sectionId || note.section_id === sectionId)
     .filter((note) => isNoteWithinWaterline(note, sectionsById, state))
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+
+function saveReadingNoteAtCurrentPosition(store, bookId, body) {
+  const resolvedBookId = requireBookId(store, bookId);
+  const state = getReadingState(store, resolvedBookId);
+  return saveReadingNote(store, resolvedBookId, {
+    ...body,
+    section_index: body.section_id ? body.section_index : body.section_index ?? state.current_section_index,
+    paragraph_index: body.paragraph_index ?? (body.section_id ? undefined : state.current_paragraph_index)
+  });
 }
 
 function saveReadingNote(store, bookId, body) {

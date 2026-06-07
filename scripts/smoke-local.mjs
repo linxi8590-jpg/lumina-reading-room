@@ -150,6 +150,10 @@ try {
       tools.result.tools.find((tool) => tool.name === 'save_ai_note')?.annotations?.readOnlyHint === false,
       'SSE save_ai_note should be marked as a write tool',
     );
+    assert(
+      !tools.result.tools.find((tool) => tool.name === 'save_ai_note')?.inputSchema?.properties?.section_index,
+      'SSE save_ai_note schema should not require the model to choose a position',
+    );
 
     await postJson(sse.endpoint, {
       jsonrpc: '2.0',
@@ -177,10 +181,6 @@ try {
       params: {
         name: 'save_ai_note',
         arguments: {
-          book_id: bookId,
-          section_index: 0,
-          paragraph_index: 1,
-          note_type: 'question',
           content: 'SSE write path saved this note.',
         },
       },
@@ -192,9 +192,12 @@ try {
     const sseSavedNotes = await api(baseUrl, token, `/api/books/${bookId}/notes`);
     assert(
       sseSavedNotes.body.notes.some(
-        (item) => item.author_type === 'ai' && item.content === 'SSE write path saved this note.',
+        (item) =>
+          item.author_type === 'ai' &&
+          item.content === 'SSE write path saved this note.' &&
+          item.paragraph_index === 1,
       ),
-      'SSE save_ai_note did not persist the AI note',
+      'SSE save_ai_note did not persist the AI note at the current position',
     );
   } finally {
     await sse.close();
