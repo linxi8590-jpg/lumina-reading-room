@@ -378,15 +378,12 @@ print_summary() {
   echo "Open the reading room:"
   echo "  https://$DOMAIN"
   echo
-  echo "MCP connector:"
+  echo "ChatGPT and Claude.ai connector URL (most common; paste this one):"
+  echo "  https://$DOMAIN/sse?token=$token"
+  echo
+  echo "For Codex, Claude Code, OpenAI Responses API (HTTP MCP, developer use):"
   echo "  Server URL: https://$DOMAIN/mcp"
   echo "  Authorization: Bearer $token"
-  echo
-  echo "Claude.ai connector URL:"
-  echo "  https://$DOMAIN/sse?token=$token"
-  echo
-  echo "ChatGPT connector URL if it only accepts one URL:"
-  echo "  https://$DOMAIN/sse?token=$token"
   echo
   echo "Books and notes are stored in:"
   echo "  $INSTALL_DIR/data"

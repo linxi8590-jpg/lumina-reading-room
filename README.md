@@ -70,15 +70,12 @@ grep '^INSTALLER_REVISION=' /tmp/lumina-install-vps.sh
 Open the reading room:
   https://lumina.example.com
 
-MCP connector:
+ChatGPT and Claude.ai connector URL (most common; paste this one):
+  https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+
+For Codex, Claude Code, OpenAI Responses API (HTTP MCP, developer use):
   Server URL: https://lumina.example.com/mcp
   Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
-
-Claude.ai connector URL:
-  https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
-
-ChatGPT connector URL:
-  https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 保存好这段输出。`lrr_...` 是书房钥匙，不要公开发到 GitHub issue、论坛或截图里。
