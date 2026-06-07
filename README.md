@@ -1,5 +1,14 @@
 # Lumina Reading Room / 星灯书房
 
+Lumina Reading Room is an open-source AI reading room that lets ChatGPT,
+Claude, Codex-compatible agents, and other MCP clients read only the book
+passages a human reader has unlocked. It tracks reading progress, exposes the
+current reading context through MCP tools, and lets AI assistants save private
+reading reflections without seeing future chapters.
+
+For English reviewers: see [Project overview](docs/en/overview.md) and
+[Codex maintainer use](docs/en/codex-use.md).
+
 Lumina 是一个自托管的 AI 共读书房。
 
 你把书上传到自己的服务器，在手机或电脑浏览器里阅读；ChatGPT、Claude 等 AI 通过连接器进入书房，只能看到你已经读到的位置以内的内容，陪你摘金句、写笔记、整理问题。
