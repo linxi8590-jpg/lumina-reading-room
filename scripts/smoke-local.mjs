@@ -142,6 +142,14 @@ try {
       tools.result.tools.some((tool) => tool.name === 'get_unlocked_context'),
       'SSE tools/list did not expose Lumina tools',
     );
+    assert(
+      tools.result.tools.find((tool) => tool.name === 'get_unlocked_context')?.annotations?.readOnlyHint === true,
+      'SSE read tools should be marked read-only',
+    );
+    assert(
+      tools.result.tools.find((tool) => tool.name === 'save_ai_note')?.annotations?.readOnlyHint === false,
+      'SSE save_ai_note should be marked as a write tool',
+    );
 
     await postJson(sse.endpoint, {
       jsonrpc: '2.0',
@@ -157,6 +165,29 @@ try {
       sseContext.result.content[0].text.includes('Second paragraph visible after progress.'),
       'SSE tools/call did not return unlocked context',
     );
+    assert(
+      sseContext.result.structuredContent.result.text.includes('Second paragraph visible after progress.'),
+      'SSE tools/call should return structured content',
+    );
+
+    await postJson(sse.endpoint, {
+      jsonrpc: '2.0',
+      id: 4,
+      method: 'tools/call',
+      params: {
+        name: 'save_ai_note',
+        arguments: {
+          book_id: bookId,
+          section_index: 0,
+          paragraph_index: 1,
+          note_type: 'question',
+          content: 'SSE write path saved this note.',
+        },
+      },
+    });
+    const sseNote = JSON.parse((await sse.readEvent()).data);
+    assert(sseNote.result.structuredContent.result.author_type === 'ai', 'SSE save_ai_note did not create an AI note');
+    assert(sseNote.result.content[0].text.includes('SSE write path saved this note.'), 'SSE save_ai_note returned empty text');
   } finally {
     await sse.close();
   }

@@ -23,52 +23,72 @@ const mcpProtocolVersion = '2024-11-05';
 const mcpSseSessions = new Map();
 const noteTypes = new Set(['reflection', 'highlight', 'quote', 'question', 'review_card']);
 const authorTypes = new Set(['user', 'ai']);
+const readOnlyToolAnnotations = { readOnlyHint: true };
+const writeToolAnnotations = { readOnlyHint: false, openWorldHint: false, destructiveHint: false };
+const mcpToolOutputSchema = {
+  type: 'object',
+  properties: {
+    tool: { type: 'string' },
+    result: {}
+  },
+  required: ['tool', 'result'],
+  additionalProperties: false
+};
 const mcpTools = [
   {
     name: 'get_current_reading_state',
     description: 'Get the current book, reading position, and unlocked reading position.',
+    annotations: readOnlyToolAnnotations,
     inputSchema: {
       type: 'object',
       properties: {
         book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' }
       }
-    }
+    },
+    outputSchema: mcpToolOutputSchema
   },
   {
     name: 'get_current_passage',
     description: 'Read the paragraph the reader is currently on.',
+    annotations: readOnlyToolAnnotations,
     inputSchema: {
       type: 'object',
       properties: {
         book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' }
       }
-    }
+    },
+    outputSchema: mcpToolOutputSchema
   },
   {
     name: 'get_unlocked_context',
     description: 'Read only the part of the book that the reader has already unlocked.',
+    annotations: readOnlyToolAnnotations,
     inputSchema: {
       type: 'object',
       properties: {
         book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' },
         limit: { type: 'number', description: 'Maximum characters to return.', default: 12000 }
       }
-    }
+    },
+    outputSchema: mcpToolOutputSchema
   },
   {
     name: 'get_reading_notes',
     description: 'List notes that are not beyond the reader unlocked position.',
+    annotations: readOnlyToolAnnotations,
     inputSchema: {
       type: 'object',
       properties: {
         book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' },
         section_id: { type: 'string', description: 'Optional section id to filter notes.' }
       }
-    }
+    },
+    outputSchema: mcpToolOutputSchema
   },
   {
     name: 'save_ai_note',
     description: 'Save an AI note at or before the reader unlocked position.',
+    annotations: writeToolAnnotations,
     inputSchema: {
       type: 'object',
       properties: {
@@ -85,11 +105,13 @@ const mcpTools = [
         model_name: { type: 'string', description: 'Optional AI model name.' }
       },
       required: ['content']
-    }
+    },
+    outputSchema: mcpToolOutputSchema
   },
   {
     name: 'advance_reading_progress',
     description: 'Move the reader position and unlock text up to that point.',
+    annotations: { ...writeToolAnnotations, idempotentHint: true },
     inputSchema: {
       type: 'object',
       properties: {
@@ -98,7 +120,8 @@ const mcpTools = [
         paragraph_index: { type: 'number', description: 'Paragraph number, starting at 0.' }
       },
       required: ['section_index', 'paragraph_index']
-    }
+    },
+    outputSchema: mcpToolOutputSchema
   }
 ];
 const xmlParser = new XMLParser({
@@ -566,10 +589,8 @@ async function handleMcpJsonRpc(message) {
       case 'tools/call': {
         const params = message.params || {};
         try {
-          const { result } = await callLuminaTool(params.name, params.arguments || {});
-          return jsonRpcResult(id, {
-            content: [{ type: 'text', text: formatToolResultForMcp(result) }]
-          });
+          const toolResult = await callLuminaTool(params.name, params.arguments || {});
+          return jsonRpcResult(id, formatToolResultForMcp(toolResult));
         } catch (error) {
           return jsonRpcResult(id, {
             content: [{ type: 'text', text: `Lumina error: ${error.message}` }],
@@ -634,8 +655,11 @@ async function callLuminaTool(tool, args = {}) {
 }
 
 function formatToolResultForMcp(result) {
-  if (typeof result === 'string') return result;
-  return JSON.stringify(result, null, 2);
+  const structuredContent = typeof result === 'object' && result !== null ? result : { tool: 'unknown', result };
+  return {
+    structuredContent,
+    content: [{ type: 'text', text: JSON.stringify(structuredContent, null, 2) }]
+  };
 }
 
 function jsonRpcResult(id, result) {
