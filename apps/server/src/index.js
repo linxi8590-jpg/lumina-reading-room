@@ -25,15 +25,6 @@ const noteTypes = new Set(['reflection', 'highlight', 'quote', 'question', 'revi
 const authorTypes = new Set(['user', 'ai']);
 const readOnlyToolAnnotations = { readOnlyHint: true };
 const writeToolAnnotations = { readOnlyHint: false, openWorldHint: false, destructiveHint: false };
-const mcpToolOutputSchema = {
-  type: 'object',
-  properties: {
-    tool: { type: 'string' },
-    result: {}
-  },
-  required: ['tool', 'result'],
-  additionalProperties: false
-};
 const mcpTools = [
   {
     name: 'get_current_reading_state',
@@ -44,8 +35,7 @@ const mcpTools = [
       properties: {
         book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' }
       }
-    },
-    outputSchema: mcpToolOutputSchema
+    }
   },
   {
     name: 'get_current_passage',
@@ -56,8 +46,7 @@ const mcpTools = [
       properties: {
         book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' }
       }
-    },
-    outputSchema: mcpToolOutputSchema
+    }
   },
   {
     name: 'get_unlocked_context',
@@ -69,8 +58,7 @@ const mcpTools = [
         book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' },
         limit: { type: 'number', description: 'Maximum characters to return.', default: 12000 }
       }
-    },
-    outputSchema: mcpToolOutputSchema
+    }
   },
   {
     name: 'get_reading_notes',
@@ -82,8 +70,7 @@ const mcpTools = [
         book_id: { type: 'string', description: 'Optional book id. If omitted, Lumina uses the current book.' },
         section_id: { type: 'string', description: 'Optional section id to filter notes.' }
       }
-    },
-    outputSchema: mcpToolOutputSchema
+    }
   },
   {
     name: 'save_ai_note',
@@ -105,8 +92,7 @@ const mcpTools = [
         model_name: { type: 'string', description: 'Optional AI model name.' }
       },
       required: ['content']
-    },
-    outputSchema: mcpToolOutputSchema
+    }
   },
   {
     name: 'advance_reading_progress',
@@ -120,8 +106,7 @@ const mcpTools = [
         paragraph_index: { type: 'number', description: 'Paragraph number, starting at 0.' }
       },
       required: ['section_index', 'paragraph_index']
-    },
-    outputSchema: mcpToolOutputSchema
+    }
   }
 ];
 const xmlParser = new XMLParser({
