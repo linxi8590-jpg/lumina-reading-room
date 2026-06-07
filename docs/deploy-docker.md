@@ -214,7 +214,7 @@ Server URL: https://lumina.example.com/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-If ChatGPT web or Claude.ai only accepts one URL, use:
+For ChatGPT web or Claude.ai, paste this connector URL:
 
 ```text
 https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx

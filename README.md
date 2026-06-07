@@ -106,7 +106,7 @@ Server URL: https://lumina.example.com/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-如果 ChatGPT 或 Claude.ai 只让你填写一个 URL，填这一条：
+ChatGPT 和 Claude.ai 网页连接器填写这一条：
 
 ```text
 https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx

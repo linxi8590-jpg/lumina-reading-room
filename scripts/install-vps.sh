@@ -191,21 +191,21 @@ install_packages() {
     set -e
     echo "  [1/3] service docker start exit=$rc"
   else
-    echo "  [1/3] no systemctl or service command; relying on existing daemon"
+    echo "  [1/3] no systemctl or service command; using the existing Docker service"
   fi
 
-  echo "  [2/3] docker info (verify daemon is up)"
+  echo "  [2/3] docker info (verify Docker is running)"
   set +e
   docker info </dev/null >/dev/null 2>&1
   rc=$?
   set -e
   echo "  [2/3] docker info exit=$rc"
   if [[ "$rc" -ne 0 ]]; then
-    echo "  Docker daemon could not be reached. Last 20 lines of journal:" >&2
+    echo "  Docker service could not be reached. Last 20 log lines:" >&2
     if command -v journalctl >/dev/null 2>&1; then
       journalctl -u docker --no-pager -n 20 2>&1 | sed 's/^/    /' >&2 || true
     fi
-    die "Docker daemon is not running. Try: systemctl status docker"
+    die "Docker is not running. Try: systemctl status docker"
   fi
   echo "  [3/3] Docker is up: $(docker --version 2>/dev/null || echo unknown)"
 }
