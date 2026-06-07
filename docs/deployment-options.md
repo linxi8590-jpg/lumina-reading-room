@@ -20,8 +20,8 @@ docs/deploy-docker.md
 This gives you:
 
 - A phone-friendly web reading room at `https://your-domain.example`.
-- A stable ChatGPT/Codex connector endpoint at `https://your-domain.example/mcp`.
-- A stable Claude.ai connector endpoint at `https://your-domain.example/sse`.
+- A stable ChatGPT web and Claude.ai connector endpoint at `https://your-domain.example/sse`.
+- A stable Codex / HTTP MCP endpoint at `https://your-domain.example/mcp`.
 - User-owned books, notes, progress, and token storage.
 - Automatic HTTPS through Caddy.
 
