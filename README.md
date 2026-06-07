@@ -7,7 +7,7 @@ current reading context through MCP tools, and lets AI assistants save private
 reading reflections without seeing future chapters.
 
 For English reviewers: see [Project overview](docs/en/overview.md) and
-[Codex maintainer use](docs/en/codex-use.md).
+[Maintainer use of Codex](docs/en/maintainer-use.md).
 
 Lumina 是一个自托管的 AI 共读书房。
 
