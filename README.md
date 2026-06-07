@@ -76,6 +76,9 @@ MCP connector:
 
 Claude.ai connector URL:
   https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+
+ChatGPT connector URL:
+  https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 保存好这段输出。`lrr_...` 是书房钥匙，不要公开发到 GitHub issue、论坛或截图里。
@@ -106,14 +109,15 @@ Server URL: https://lumina.example.com/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-如果客户端只让你填写一个 URL，按客户端选择：
+如果 ChatGPT 或 Claude.ai 只让你填写一个 URL，填这一条：
 
 ```text
-Claude.ai: https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
-ChatGPT:   https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 网页里的连接配置页会按 ChatGPT、Claude、Codex、Claude Code 分别生成可复制配置。
+
+如果某个 ChatGPT 对话反复报工具错误，但服务器和连接器本身正常，先开一个全新的 ChatGPT 对话再试。旧对话有时会卡在坏掉的工具调用状态里。
 
 ## 适合谁？
 

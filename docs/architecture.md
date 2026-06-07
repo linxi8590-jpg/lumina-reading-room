@@ -110,7 +110,7 @@ User-facing connection string:
 Server URL: https://your-domain.example/mcp
 Authorization: Bearer <connector-token>
 Claude.ai connector URL: https://your-domain.example/sse?token=<connector-token>
-ChatGPT connector URL: https://your-domain.example/mcp?token=<connector-token>
+ChatGPT connector URL: https://your-domain.example/sse?token=<connector-token>
 ```
 
 The token is scoped to the user's own library.

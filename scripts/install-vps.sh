@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_URL="https://github.com/linxi8590-jpg/lumina-reading-room.git"
 BRANCH="main"
 INSTALL_DIR="/opt/lumina-reading-room"
-INSTALLER_REVISION="2026-06-06.compose-v2-binary"
+INSTALLER_REVISION="2026-06-07.chatgpt-sse-url"
 DOMAIN=""
 YES=0
 STRICT_DNS=0
@@ -386,7 +386,7 @@ print_summary() {
   echo "  https://$DOMAIN/sse?token=$token"
   echo
   echo "ChatGPT connector URL if it only accepts one URL:"
-  echo "  https://$DOMAIN/mcp?token=$token"
+  echo "  https://$DOMAIN/sse?token=$token"
   echo
   echo "Books and notes are stored in:"
   echo "  $INSTALL_DIR/data"

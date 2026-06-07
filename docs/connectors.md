@@ -18,11 +18,11 @@ Server URL: https://your-domain.example/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-有些网页端连接器界面只让你填一个 URL。Claude.ai 和 ChatGPT 需要的地址不一样：
+有些网页端连接器界面只让你填一个 URL。ChatGPT 和 Claude.ai 都填 SSE 地址：
 
 ```text
 Claude.ai: https://your-domain.example/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
-ChatGPT:   https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+ChatGPT:   https://your-domain.example/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 这个 URL 本身也等同于钥匙，不要公开截图。
@@ -42,7 +42,7 @@ https://your-domain.example/mcp        [拷贝]
 lrr_abcd1234••••••••••                [显示] [拷贝]
 Authorization: Bearer lrr_abcd...      [拷贝]
 https://.../sse?token=lrr_abcd...      [Claude.ai 拷贝]
-https://.../mcp?token=lrr_abcd...      [ChatGPT 拷贝]
+https://.../sse?token=lrr_abcd...      [ChatGPT 拷贝]
 
 这是你书房的钥匙。不要发到网上。
 ```
@@ -51,7 +51,16 @@ https://.../mcp?token=lrr_abcd...      [ChatGPT 拷贝]
 
 ## ChatGPT / OpenAI
 
-ChatGPT 的界面通常会让你填写远程 MCP server 地址和授权信息。OpenAI API 里的字段长这样：
+ChatGPT 网页连接器添加远程 MCP server 时，填 SSE 地址：
+
+```text
+Remote MCP URL: https://your-domain.example/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+Authentication: No Authentication / 未授权
+```
+
+如果 ChatGPT 某个测试对话反复报工具错误，但服务器日志没有新请求，先换一个全新的对话再试。反复测试后的单个对话有时会卡在坏状态；重新添加连接器不一定能修好那个旧对话。
+
+OpenAI API 的开发者配置仍然可以用 `/mcp` 加授权字段，形状如下：
 
 ```json
 {
@@ -64,17 +73,17 @@ ChatGPT 的界面通常会让你填写远程 MCP server 地址和授权信息。
 }
 ```
 
-如果 ChatGPT 当前界面只给你表单，不需要粘 JSON，就填：
+如果开发者工具只给你表单，不需要粘 JSON，就填：
 
 ```text
 MCP URL: https://your-domain.example/mcp
 Authorization token: lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-如果界面只让你填一个远程 MCP URL，就填：
+如果 ChatGPT 网页界面只让你填一个远程 MCP URL，就填：
 
 ```text
-https://your-domain.example/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+https://your-domain.example/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 ## Claude.ai / Claude Desktop
@@ -154,7 +163,7 @@ https://your-domain.example/health
 }
 ```
 
-这只说明服务器活着。AI 能不能进书房，还要看连接器令牌是否正确。Claude.ai 看 `/sse?token=...`，ChatGPT / Codex 这类 HTTP MCP 客户端看 `/mcp`。
+这只说明服务器活着。AI 能不能进书房，还要看连接器令牌是否正确。ChatGPT 网页和 Claude.ai 看 `/sse?token=...`；Codex、Claude Code 和其他支持 header 的 HTTP MCP 客户端看 `/mcp` 加 Authorization。
 
 ## 工具列表
 

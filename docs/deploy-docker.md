@@ -71,6 +71,9 @@ MCP connector:
 
 Claude.ai connector URL:
   https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+
+ChatGPT connector URL:
+  https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 Open `https://lumina.example.com` in a phone or desktop browser.
@@ -211,11 +214,10 @@ Server URL: https://lumina.example.com/mcp
 Authorization: Bearer lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-If the client only accepts one URL, choose the matching one:
+If ChatGPT web or Claude.ai only accepts one URL, use:
 
 ```text
-Claude.ai: https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
-ChatGPT:   https://lumina.example.com/mcp?token=lrr_xxxxxxxxxxxxxxxxxxxxx
+https://lumina.example.com/sse?token=lrr_xxxxxxxxxxxxxxxxxxxxx
 ```
 
 ## Safety Notes

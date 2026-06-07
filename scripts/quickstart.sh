@@ -60,7 +60,7 @@ echo "Claude.ai connector URL:"
 echo "  http://127.0.0.1:8787/sse?token=$TOKEN"
 echo
 echo "ChatGPT connector URL:"
-echo "  http://127.0.0.1:8787/mcp?token=$TOKEN"
+echo "  http://127.0.0.1:8787/sse?token=$TOKEN"
 echo
 echo "Print copy-ready connector snippets:"
 echo "  npm run connector:config"

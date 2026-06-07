@@ -80,16 +80,22 @@ Claude.ai uses:
 https://example-name.trycloudflare.com/sse?token=<your-token>
 ```
 
+ChatGPT web connectors use the same SSE shape:
+
+```text
+https://example-name.trycloudflare.com/sse?token=<your-token>
+```
+
 ## 3. Connect An AI Client
 
-In ChatGPT Apps or another HTTP MCP client, use:
+In an HTTP MCP client that supports headers, use:
 
 ```text
 Server URL: https://example-name.trycloudflare.com/mcp
 Authorization: Bearer <your-token>
 ```
 
-In Claude.ai custom connector, paste this one URL:
+In ChatGPT web or Claude.ai custom connector, paste this one URL:
 
 ```text
 https://example-name.trycloudflare.com/sse?token=<your-token>
