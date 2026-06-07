@@ -25,6 +25,7 @@ const noteTypes = new Set(['reflection', 'highlight', 'quote', 'question', 'revi
 const authorTypes = new Set(['user', 'ai']);
 const readOnlyToolAnnotations = { readOnlyHint: true };
 const writeToolAnnotations = { readOnlyHint: false, openWorldHint: false, destructiveHint: false };
+const privateReflectionToolName = 'record_reading_reflection';
 const mcpTools = [
   {
     name: 'get_current_reading_state',
@@ -73,8 +74,8 @@ const mcpTools = [
     }
   },
   {
-    name: 'save_ai_note',
-    description: 'Use this when the reader asks you to save a note. Save the note to the current visible reading position. Only provide the note text unless the reader asks for a specific note type.',
+    name: privateReflectionToolName,
+    description: "Use this when the reader explicitly asks to keep a private reflection about the current reading passage in Lumina. This only records a private reading reflection inside the reader's own Lumina Reading Room. It does not publish, send, delete, overwrite, or modify public internet content.",
     annotations: writeToolAnnotations,
     inputSchema: {
       type: 'object',
@@ -82,9 +83,9 @@ const mcpTools = [
         note_type: {
           type: 'string',
           enum: [...noteTypes],
-          description: 'Optional kind of note to save. Use reflection unless the reader asks for another type.'
+          description: 'Optional kind of private reading reflection. Use reflection unless the reader asks for another type.'
         },
-        content: { type: 'string', description: 'The note text to save.' }
+        content: { type: 'string', description: 'The private reading reflection text.' }
       },
       required: ['content']
     }
@@ -572,7 +573,7 @@ async function handleMcpJsonRpc(message) {
         const toolName = params.name;
         const toolArgs = params.arguments || {};
         // Verbose debug logging — temporary, to diagnose why ChatGPT's MCP
-        // connector breaks specifically on save_ai_note while Claude.ai is fine.
+        // connector breaks specifically on private reflection writes while Claude.ai is fine.
         // Logs the request id, tool name, argument keys (not values, to avoid
         // dumping note text into journalctl), and full error stacks on failure.
         const argKeys = Object.keys(toolArgs).join(',') || '(none)';
@@ -603,7 +604,8 @@ async function handleMcpJsonRpc(message) {
 }
 
 async function callLuminaTool(tool, args = {}) {
-  if (!mcpTools.some((item) => item.name === tool)) {
+  const legacyPrivateReflectionToolName = 'save_ai_note';
+  if (!mcpTools.some((item) => item.name === tool) && tool !== legacyPrivateReflectionToolName) {
     const error = new Error('unknown_tool');
     error.tool = tool;
     throw error;
@@ -626,7 +628,8 @@ async function callLuminaTool(tool, args = {}) {
     case 'get_reading_notes':
       result = getReadingNotes(store, args.book_id || inferBookId(store), args.section_id);
       break;
-    case 'save_ai_note':
+    case privateReflectionToolName:
+    case legacyPrivateReflectionToolName:
       result = saveReadingNoteAtCurrentPosition(store, args.book_id || inferBookId(store), {
         ...args,
         author_type: 'ai'
@@ -651,7 +654,7 @@ async function callLuminaTool(tool, args = {}) {
 }
 
 function formatToolResultForMcp(result) {
-  if (result?.tool === 'save_ai_note') {
+  if (result?.tool === privateReflectionToolName || result?.tool === 'save_ai_note') {
     const noteId = result.result?.id;
     return {
       content: [{ type: 'text', text: noteId ? `Note saved. note_id=${noteId}` : 'Note saved.' }]

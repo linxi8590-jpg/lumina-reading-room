@@ -97,7 +97,7 @@ Read tools:
 
 Write tools:
 
-- `save_ai_note`
+- `record_reading_reflection`
 - `advance_reading_progress`
 
 There must be no tool that fetches future sections.

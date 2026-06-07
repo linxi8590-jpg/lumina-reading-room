@@ -147,12 +147,13 @@ try {
       'SSE read tools should be marked read-only',
     );
     assert(
-      tools.result.tools.find((tool) => tool.name === 'save_ai_note')?.annotations?.readOnlyHint === false,
-      'SSE save_ai_note should be marked as a write tool',
+      tools.result.tools.find((tool) => tool.name === 'record_reading_reflection')?.annotations?.readOnlyHint === false,
+      'SSE record_reading_reflection should be marked as a write tool',
     );
     assert(
-      !tools.result.tools.find((tool) => tool.name === 'save_ai_note')?.inputSchema?.properties?.section_index,
-      'SSE save_ai_note schema should not require the model to choose a position',
+      !tools.result.tools.find((tool) => tool.name === 'record_reading_reflection')?.inputSchema?.properties
+        ?.section_index,
+      'SSE record_reading_reflection schema should not require the model to choose a position',
     );
 
     await postJson(sse.endpoint, {
@@ -179,15 +180,18 @@ try {
       id: 4,
       method: 'tools/call',
       params: {
-        name: 'save_ai_note',
+        name: 'record_reading_reflection',
         arguments: {
           content: 'SSE write path saved this note.',
         },
       },
     });
     const sseNote = JSON.parse((await sse.readEvent()).data);
-    assert(sseNote.result.content[0].text.startsWith('Note saved.'), 'SSE save_ai_note returned empty text');
-    assert(!sseNote.result.structuredContent, 'SSE save_ai_note should return a minimal write result');
+    assert(
+      sseNote.result.content[0].text.startsWith('Note saved.'),
+      'SSE record_reading_reflection returned empty text',
+    );
+    assert(!sseNote.result.structuredContent, 'SSE record_reading_reflection should return a minimal write result');
 
     const sseSavedNotes = await api(baseUrl, token, `/api/books/${bookId}/notes`);
     assert(
@@ -197,7 +201,7 @@ try {
           item.content === 'SSE write path saved this note.' &&
           item.paragraph_index === 1,
       ),
-      'SSE save_ai_note did not persist the AI note at the current position',
+      'SSE record_reading_reflection did not persist the AI note at the current position',
     );
   } finally {
     await sse.close();

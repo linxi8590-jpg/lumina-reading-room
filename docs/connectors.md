@@ -198,9 +198,9 @@ https://your-domain.example/health
 
 返回水位线以内、用户和 AI 已经写下的笔记。未读段落上的笔记不会返回。
 
-### save_ai_note
+### record_reading_reflection
 
-让 AI 写一条读书笔记。
+让 AI 记录一条私人的读书感想。
 
 笔记类型只能是：
 
@@ -213,6 +213,8 @@ review_card
 ```
 
 这些类型会在网页里显示成不同样式：感受、重点、金句、问题、复习卡。
+
+旧版工具名 `save_ai_note` 仍作为兼容别名保留，但新连接器会看到 `record_reading_reflection`。
 
 ### advance_reading_progress
 
