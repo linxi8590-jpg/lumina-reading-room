@@ -572,10 +572,8 @@ async function handleMcpJsonRpc(message) {
         const params = message.params || {};
         const toolName = params.name;
         const toolArgs = params.arguments || {};
-        // Verbose debug logging — temporary, to diagnose why ChatGPT's MCP
-        // connector breaks specifically on private reflection writes while Claude.ai is fine.
-        // Logs the request id, tool name, argument keys (not values, to avoid
-        // dumping note text into journalctl), and full error stacks on failure.
+        // Log request shape without dumping note text into journalctl.
+        // This keeps connector failures debuggable without exposing reading content.
         const argKeys = Object.keys(toolArgs).join(',') || '(none)';
         console.log(`[mcp tools/call] id=${id} tool=${toolName} arg_keys=${argKeys}`);
         try {
