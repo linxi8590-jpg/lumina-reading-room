@@ -655,6 +655,13 @@ async function callLuminaTool(tool, args = {}) {
 }
 
 function formatToolResultForMcp(result) {
+  if (result?.tool === 'save_ai_note') {
+    const noteId = result.result?.id;
+    return {
+      content: [{ type: 'text', text: noteId ? `Note saved. note_id=${noteId}` : 'Note saved.' }]
+    };
+  }
+
   const structuredContent = typeof result === 'object' && result !== null ? result : { tool: 'unknown', result };
   return {
     structuredContent,

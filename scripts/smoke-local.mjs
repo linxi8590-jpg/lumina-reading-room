@@ -186,8 +186,16 @@ try {
       },
     });
     const sseNote = JSON.parse((await sse.readEvent()).data);
-    assert(sseNote.result.structuredContent.result.author_type === 'ai', 'SSE save_ai_note did not create an AI note');
-    assert(sseNote.result.content[0].text.includes('SSE write path saved this note.'), 'SSE save_ai_note returned empty text');
+    assert(sseNote.result.content[0].text.startsWith('Note saved.'), 'SSE save_ai_note returned empty text');
+    assert(!sseNote.result.structuredContent, 'SSE save_ai_note should return a minimal write result');
+
+    const sseSavedNotes = await api(baseUrl, token, `/api/books/${bookId}/notes`);
+    assert(
+      sseSavedNotes.body.notes.some(
+        (item) => item.author_type === 'ai' && item.content === 'SSE write path saved this note.',
+      ),
+      'SSE save_ai_note did not persist the AI note',
+    );
   } finally {
     await sse.close();
   }
