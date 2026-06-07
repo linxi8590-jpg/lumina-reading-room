@@ -588,10 +588,25 @@ async function handleMcpJsonRpc(message) {
         return jsonRpcResult(id, { tools: mcpTools });
       case 'tools/call': {
         const params = message.params || {};
+        const toolName = params.name;
+        const toolArgs = params.arguments || {};
+        // Verbose debug logging — temporary, to diagnose why ChatGPT's MCP
+        // connector breaks specifically on save_ai_note while Claude.ai is fine.
+        // Logs the request id, tool name, argument keys (not values, to avoid
+        // dumping note text into journalctl), and full error stacks on failure.
+        const argKeys = Object.keys(toolArgs).join(',') || '(none)';
+        console.log(`[mcp tools/call] id=${id} tool=${toolName} arg_keys=${argKeys}`);
         try {
-          const toolResult = await callLuminaTool(params.name, params.arguments || {});
-          return jsonRpcResult(id, formatToolResultForMcp(toolResult));
+          const toolResult = await callLuminaTool(toolName, toolArgs);
+          const response = jsonRpcResult(id, formatToolResultForMcp(toolResult));
+          console.log(
+            `[mcp tools/call] id=${id} tool=${toolName} ok response_keys=${Object.keys(response.result || {}).join(',')}`
+          );
+          return response;
         } catch (error) {
+          console.error(
+            `[mcp tools/call] id=${id} tool=${toolName} FAILED: ${error.message}\n${error.stack || '(no stack)'}`
+          );
           return jsonRpcResult(id, {
             content: [{ type: 'text', text: `Lumina error: ${error.message}` }],
             isError: true
