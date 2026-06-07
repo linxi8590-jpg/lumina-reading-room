@@ -28,7 +28,7 @@ export default function ReadingWaterline({
   const label = `阅读进度，已读到第 ${unlockedSectionIndex + 1} 章，共 ${totalSections} 章，已读 ${percent}%`
 
   return (
-    <div className="sticky top-0 bg-paper-50/95 backdrop-blur py-3 mb-4 z-10 border-b border-ink-500/10">
+    <div className="sticky top-12 md:top-0 bg-paper-50/95 backdrop-blur py-3 mb-4 z-10 border-b border-ink-500/10">
       <div className="flex items-center justify-between gap-3 mb-2 text-xs text-ink-500">
         <span>
           第 {currentSectionIndex + 1} 章 / 共 {totalSections} 章

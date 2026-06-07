@@ -309,8 +309,8 @@ export default function Reader() {
             }
           }}
         >
-          {/* mobile 顶部工具栏：抽屉入口 */}
-          <div className="md:hidden -mx-6 px-6 pb-3 mb-4 flex items-center gap-2 border-b border-ink-500/15">
+          {/* mobile 顶部工具栏：抽屉入口。sticky 让滚到正文中间也能看到回书架/章节/笔记按钮。 */}
+          <div className="md:hidden sticky top-[env(safe-area-inset-top)] z-20 -mx-6 px-6 py-2 mb-4 flex items-center gap-2 border-b border-ink-500/15 bg-paper-50/95 backdrop-blur">
             <Link
               to="/shelf"
               className="text-xs text-sky-700 underline mr-auto"
