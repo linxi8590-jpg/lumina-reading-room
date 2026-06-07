@@ -68,7 +68,7 @@ If the printed URL is:
 https://example-name.trycloudflare.com
 ```
 
-then your connector URL is:
+then your HTTP MCP URL is:
 
 ```text
 https://example-name.trycloudflare.com/mcp
